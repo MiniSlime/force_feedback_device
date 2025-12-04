@@ -45,6 +45,25 @@ npm run build    # 本番ビルド
 4. 参加者番号と手法を選択して実験を開始
 5. 実験完了後、CSVファイルをダウンロード
 
+## GitHub Pagesでの公開
+
+このプロジェクトのWebアプリケーションはGitHub Pagesで自動デプロイされます。
+
+### 初回設定
+
+1. GitHubリポジトリの「Settings」→「Pages」に移動
+2. 「Source」で「GitHub Actions」を選択
+3. `main`ブランチにプッシュすると自動的にデプロイが開始されます
+
+### デプロイ後のアクセス
+
+デプロイが完了すると、以下のURLでアクセスできます：
+```
+https://YOUR_USERNAME.github.io/force_feedback_device/
+```
+
+**注意**: GitHub PagesはHTTPSで提供されるため、Web Bluetooth APIを使用できます。
+
 ## ディレクトリ構造
 
 ```
