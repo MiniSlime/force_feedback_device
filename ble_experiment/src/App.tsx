@@ -129,13 +129,6 @@ function Home() {
 
   return (
     <div className="app-root">
-      <header className="app-header">
-        <h1>BLE Text Sender</h1>
-        <p className="app-subtitle">
-          Web Bluetooth API を使って BLE デバイスにテキストを送信します
-        </p>
-      </header>
-
       <main className="app-main">
         <section className="card status-card">
           <h2>実験ステータス</h2>
@@ -147,7 +140,7 @@ function Home() {
               id="participantId"
               className="text-input single-line"
               type="text"
-              placeholder="例: P001"
+              placeholder="例: P01"
               value={participantId}
               onChange={(e) => setParticipantId(e.target.value)}
             />
@@ -185,7 +178,7 @@ function Home() {
         </section>
 
         <section className="card">
-          <h2>1. デバイス接続</h2>
+          <h2>デバイス接続</h2>
           <p className="status-text">
             状態: <span className={`status-pill status-${bleState}`}>{bleState}</span>
           </p>
@@ -210,13 +203,11 @@ function Home() {
           </div>
           <p className="helper-text">
             接続時にブラウザがデバイス選択ダイアログを表示します。
-            <br />
-            使用するサービスUUIDやCharacteristic UUIDは、実際のデバイス仕様に合わせて実装してください。
           </p>
         </section>
 
         <section className="card">
-          <h2>2. テキスト送信</h2>
+          <h2>テキスト送信テスト</h2>
           <label className="field-label" htmlFor="textToSend">
             送信するテキスト
           </label>
