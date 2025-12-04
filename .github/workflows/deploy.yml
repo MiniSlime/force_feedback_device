@@ -27,13 +27,13 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Cache npm dependencies
+      - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('ble_experiment/package-lock.json') }}
+          path: ble_experiment/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('ble_experiment/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-
+            ${{ runner.os }}-node-modules-
 
       - name: Install dependencies
         working-directory: ./ble_experiment
