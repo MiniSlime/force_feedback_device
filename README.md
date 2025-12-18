@@ -6,6 +6,8 @@ ESP32とWeb Bluetooth APIを使用した力覚フィードバックデバイス�
 
 このプロジェクトは、ESP32とWeb Bluetooth APIを使用した力覚フィードバックデバイスの性能評価実験システムです。ESP32がBLEペリフェラルとして動作し、React Webアプリケーションから制御を受け、4つのモーター（L9110Sドライバ）で8方向の推力提示を行います。
 
+また、DJI Telloドローンを使用した方向提示デバイスとしての機能も提供しています。`vertical_force`手法を選択した場合、Telloドローンが8方向に移動して方向提示を行います。
+
 ## 技術スタック
 
 ### Webアプリケーション
@@ -18,6 +20,12 @@ ESP32とWeb Bluetooth APIを使用した力覚フィードバックデバイス�
 - **開発環境**: Arduino IDE
 - **BLEライブラリ**: ESP32 BLE Arduino
 - **モータードライバ**: L9110S（4チャンネル）
+
+### Tello制御（vertical_force手法）
+- **ドローン**: DJI Tello
+- **ライブラリ**: tellopy (Python)
+- **通信**: tellopy経由（バックエンドサーバー経由）
+- **バックエンド**: Python + Flask
 
 ## セットアップ
 
@@ -37,13 +45,40 @@ npm run build    # 本番ビルド
 3. 必要なライブラリをインストール（ESP32 BLE Arduino）
 4. アップロード
 
+### Telloサーバー（vertical_force手法を使用する場合）
+
+```bash
+cd tello-server
+pip install -r requirements.txt
+python server.py      # サーバー起動（localhost:3001）
+```
+
+**注意**: Telloサーバーを起動する前に、以下を確認してください：
+- Python 3.7以上がインストールされていること
+- TelloがWi-Fiに接続されていること
+- PC/MacがTelloと同じWi-Fiネットワークに接続されていること
+- tellopyパッケージがインストールされていること（`pip install tellopy`）
+
 ## 使用方法
+
+### horizontal_force手法（ESP32使用）
 
 1. ESP32にスケッチをアップロード
 2. Webアプリケーションを起動
 3. ホーム画面でBLEデバイスに接続
-4. 参加者番号と手法を選択して実験を開始
-5. 実験完了後、CSVファイルをダウンロード
+4. 参加者番号を入力し、手法で「horizontal_force」を選択
+5. 実験開始ボタンをクリック
+6. 実験完了後、CSVファイルをダウンロード
+
+### vertical_force手法（Tello使用）
+
+1. Telloサーバーを起動（`cd tello-server && python server.py`）
+2. TelloをWi-Fiに接続
+3. Webアプリケーションを起動
+4. ホーム画面でTelloに接続
+5. 参加者番号を入力し、手法で「vertical_force」を選択
+6. 実験開始ボタンをクリック（自動的に離陸）
+7. 実験完了後、CSVファイルをダウンロード（自動的に着陸）
 
 ## GitHub Pagesでの公開
 
@@ -72,8 +107,14 @@ force_feedback_device/
 │   ├── src/
 │   │   ├── App.tsx             # メインアプリケーション
 │   │   ├── bleConnection.ts     # BLE接続状態管理
+│   │   ├── telloConnection.ts   # Tello接続状態管理
 │   │   └── ...
 │   └── package.json
+├── tello-server/                # Tello制御用バックエンドサーバー
+│   ├── server.py                # tellopyを使用したPythonサーバー
+│   ├── server.js                # 旧Node.jsサーバー（参考用）
+│   ├── requirements.txt         # Python依存パッケージ
+│   └── package.json            # 旧Node.js設定（参考用）
 ├── quad_motor_control_ble.ino  # メインESP32スケッチ
 ├── ble_led_ble_test.ino        # テスト用ESP32スケッチ
 ├── quad_motor_control.ino      # モーター制御のみのベーススケッチ
