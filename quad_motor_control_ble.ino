@@ -3,6 +3,7 @@
 
   概要:
   - @quad_motor_control.ino と同様に L9110S で4つのモーターを制御
+  - モーター制御はPWM制御を使用（デューティー比70%）
   - @ble_led_ble_test.ino と同様に BLE ペリフェラルとして動作し、
     Webアプリ(React + Web Bluetooth)からのテキストメッセージを受信
   - 受信したテキストに応じて:
@@ -45,6 +46,9 @@ const int INLEFT_B = 21; // ESP32 GPIO 21
 const int INBACK_A = 25; // ESP32 GPIO 25
 const int INBACK_B = 26; // ESP32 GPIO 26
 
+// MODEピン定義
+const int MODE = 23; // ESP32 GPIO 23
+
 // --------------------------------------------------------
 // LED & BLE 設定（@ble_led_ble_test.ino と同様）
 // --------------------------------------------------------
@@ -69,11 +73,43 @@ const int BLINK_INTERVAL_MS = 200; // ON/OFF の間隔
 // モーターの動作時間 (ms)
 const unsigned long MOTOR_RUN_DURATION_MS = 3000;
 
+// モーター起動間隔 (ms)
+const unsigned long MOTOR_START_INTERVAL_MS = 100;
+
+// PWM制御設定
+const int PWM_FREQUENCY = 20000;       // PWM周波数 (Hz)
+const int PWM_RESOLUTION = 8;         // PWM解像度 (ビット)
+const int PWM_DUTY_CYCLE = 179;       // デューティー比70% (255 * 0.7 ≈ 179)
+const int PWM_DUTY_CYCLE_FULL = 255;  // デューティー比100% (起動時用)
+const unsigned long MOTOR_START_BOOST_MS = 100; // 起動時の100%回転時間 (ms)
+
+// 注意: 新しいESP32 Arduinoコアでは、ledcAttachがチャンネルを自動で割り当てるため、
+// チャンネル番号の定義は不要になりました。ledcWrite(pin, duty)を使用します。
+
 // LED 点滅用の非同期制御フラグ
 bool ledBlinkActive = false;
 int  ledBlinkRemainingToggles = 0;      // 残りトグル回数 (ON/OFFで2カウント)
 unsigned long ledBlinkInterval = 0;     // ON/OFF 間隔
 unsigned long ledBlinkLastMillis = 0;   // 最後にトグルした時刻
+
+// モーター起動用の非同期制御フラグ
+bool motorStartPending = false;         // モーター起動待ちがあるか
+float pendingThrustA = 0;               // 起動待ちの推力A
+float pendingThrustB = 0;               // 起動待ちの推力B
+float pendingThrustC = 0;               // 起動待ちの推力C
+float pendingThrustD = 0;               // 起動待ちの推力D
+int pendingMotorIndex = 0;              // 次に起動するモーターのインデックス (0=A, 1=B, 2=C, 3=D)
+unsigned long motorStartLastMillis = 0;  // 最後にモーターを起動した時刻
+
+// モーター起動時刻記録（100%→70%切り替え用）
+unsigned long motorAStartTime = 0;      // モーターAの起動時刻（0=未起動）
+unsigned long motorBStartTime = 0;      // モーターBの起動時刻（0=未起動）
+unsigned long motorCStartTime = 0;      // モーターCの起動時刻（0=未起動）
+unsigned long motorDStartTime = 0;      // モーターDの起動時刻（0=未起動）
+float motorAThrust = 0;                 // モーターAの推力方向（-1, 0, 1）
+float motorBThrust = 0;                 // モーターBの推力方向（-1, 0, 1）
+float motorCThrust = 0;                 // モーターCの推力方向（-1, 0, 1）
+float motorDThrust = 0;                 // モーターDの推力方向（-1, 0, 1）
 
 // --------------------------------------------------------
 // グローバル変数
@@ -133,23 +169,108 @@ void updateLedBlink() {
 }
 
 // --------------------------------------------------------
-// ヘルパー関数: モーター制御
-// (@quad_motor_control.ino より抜粋)
+// ヘルパー関数: モーター制御（PWM制御）
 // --------------------------------------------------------
 
-void controlMotorSingle(int inaPin, int inbPin, float thrust) {
+void controlMotorSingle(int inaPin, int inbPin, float thrust, bool useFullDuty = false) {
+  int dutyCycle = useFullDuty ? PWM_DUTY_CYCLE_FULL : PWM_DUTY_CYCLE;
+  
   if (thrust > 0.0) {
     // 正転
-    digitalWrite(inaPin, HIGH);
-    digitalWrite(inbPin, LOW);
+    ledcWrite(inaPin, dutyCycle);
+    ledcWrite(inbPin, 0);
   } else if (thrust < 0.0) {
     // 逆転
-    digitalWrite(inaPin, LOW);
-    digitalWrite(inbPin, HIGH);
+    ledcWrite(inaPin, 0);
+    ledcWrite(inbPin, dutyCycle);
   } else {
     // 停止
-    digitalWrite(inaPin, LOW);
-    digitalWrite(inbPin, LOW);
+    ledcWrite(inaPin, 0);
+    ledcWrite(inbPin, 0);
+  }
+}
+
+// 非同期モーター起動の更新処理（loop() から定期的に呼び出す）
+void updateMotorStart() {
+  if (!motorStartPending) {
+    return;
+  }
+
+  unsigned long now = millis();
+  if (now - motorStartLastMillis >= MOTOR_START_INTERVAL_MS) {
+    motorStartLastMillis = now;
+
+    // 次のモーターを順番に起動（pendingMotorIndexは次のモーターのインデックス）
+    // 0=A, 1=B, 2=C, 3=D, 4=完了
+    // pendingMotorIndex以降のモーターを順番にチェックして起動（1回の呼び出しで1つだけ）
+    if (pendingMotorIndex == 0) {
+      if (pendingThrustA != 0.0) {
+        controlMotorSingle(INRIGHT_A, INRIGHT_B, pendingThrustA, true); // 100%で起動
+        motorAStartTime = millis();
+        motorAThrust = pendingThrustA;
+        pendingMotorIndex = 1;
+      } else {
+        pendingMotorIndex = 1; // このモーターは起動不要なので次へ
+      }
+    } else if (pendingMotorIndex == 1) {
+      if (pendingThrustB != 0.0) {
+        controlMotorSingle(INFRONT_A, INFRONT_B, pendingThrustB, true); // 100%で起動
+        motorBStartTime = millis();
+        motorBThrust = pendingThrustB;
+        pendingMotorIndex = 2;
+      } else {
+        pendingMotorIndex = 2; // このモーターは起動不要なので次へ
+      }
+    } else if (pendingMotorIndex == 2) {
+      if (pendingThrustC != 0.0) {
+        controlMotorSingle(INLEFT_A, INLEFT_B, pendingThrustC, true); // 100%で起動
+        motorCStartTime = millis();
+        motorCThrust = pendingThrustC;
+        pendingMotorIndex = 3;
+      } else {
+        pendingMotorIndex = 3; // このモーターは起動不要なので次へ
+      }
+    } else if (pendingMotorIndex == 3) {
+      if (pendingThrustD != 0.0) {
+        controlMotorSingle(INBACK_A, INBACK_B, pendingThrustD, true); // 100%で起動
+        motorDStartTime = millis();
+        motorDThrust = pendingThrustD;
+      }
+      pendingMotorIndex = 4;
+      motorStartPending = false; // すべて起動完了
+    } else {
+      // 完了
+      motorStartPending = false;
+    }
+  }
+}
+
+// モーターのデューティ比を100%から70%に切り替える処理（loop() から定期的に呼び出す）
+void updateMotorDutyCycle() {
+  unsigned long now = millis();
+  
+  // モーターA: 起動から一定時間経過したら70%に切り替え
+  if (motorAStartTime > 0 && (now - motorAStartTime >= MOTOR_START_BOOST_MS)) {
+    controlMotorSingle(INRIGHT_A, INRIGHT_B, motorAThrust, false); // 70%に切り替え
+    motorAStartTime = 0; // 処理済みフラグ
+  }
+  
+  // モーターB: 起動から一定時間経過したら70%に切り替え
+  if (motorBStartTime > 0 && (now - motorBStartTime >= MOTOR_START_BOOST_MS)) {
+    controlMotorSingle(INFRONT_A, INFRONT_B, motorBThrust, false); // 70%に切り替え
+    motorBStartTime = 0; // 処理済みフラグ
+  }
+  
+  // モーターC: 起動から一定時間経過したら70%に切り替え
+  if (motorCStartTime > 0 && (now - motorCStartTime >= MOTOR_START_BOOST_MS)) {
+    controlMotorSingle(INLEFT_A, INLEFT_B, motorCThrust, false); // 70%に切り替え
+    motorCStartTime = 0; // 処理済みフラグ
+  }
+  
+  // モーターD: 起動から一定時間経過したら70%に切り替え
+  if (motorDStartTime > 0 && (now - motorDStartTime >= MOTOR_START_BOOST_MS)) {
+    controlMotorSingle(INBACK_A, INBACK_B, motorDThrust, false); // 70%に切り替え
+    motorDStartTime = 0; // 処理済みフラグ
   }
 }
 
@@ -165,15 +286,28 @@ void controlMotorSingle(int inaPin, int inbPin, float thrust) {
  */
 void controlMotor(int direction, bool enabled) {
   if (!enabled) {
-    // すべてのモーターを停止
-    digitalWrite(INRIGHT_A, LOW);
-    digitalWrite(INRIGHT_B, LOW);
-    digitalWrite(INFRONT_A, LOW);
-    digitalWrite(INFRONT_B, LOW);
-    digitalWrite(INLEFT_A, LOW);
-    digitalWrite(INLEFT_B, LOW);
-    digitalWrite(INBACK_A, LOW);
-    digitalWrite(INBACK_B, LOW);
+    // モーター起動待ちをキャンセル
+    motorStartPending = false;
+    pendingThrustA = 0;
+    pendingThrustB = 0;
+    pendingThrustC = 0;
+    pendingThrustD = 0;
+    
+    // 起動時刻記録をリセット
+    motorAStartTime = 0;
+    motorBStartTime = 0;
+    motorCStartTime = 0;
+    motorDStartTime = 0;
+    
+    // すべてのモーターを停止（PWMで0に設定）
+    ledcWrite(INRIGHT_A, 0);
+    ledcWrite(INRIGHT_B, 0);
+    ledcWrite(INFRONT_A, 0);
+    ledcWrite(INFRONT_B, 0);
+    ledcWrite(INLEFT_A, 0);
+    ledcWrite(INLEFT_B, 0);
+    ledcWrite(INBACK_A, 0);
+    ledcWrite(INBACK_B, 0);
     Serial.println("Motors stopped.");
     return;
   }
@@ -222,10 +356,52 @@ void controlMotor(int direction, bool enabled) {
       break;
   }
 
-  controlMotorSingle(INRIGHT_A, INRIGHT_B, thrustA);
-  controlMotorSingle(INFRONT_A, INFRONT_B, thrustB);
-  controlMotorSingle(INLEFT_A, INLEFT_B, thrustC);
-  controlMotorSingle(INBACK_A, INBACK_B, thrustD);
+  // 動作するモーターを100ms間隔で順番に起動（非同期）
+  // 起動予約を設定
+  pendingThrustA = thrustA;
+  pendingThrustB = thrustB;
+  pendingThrustC = thrustC;
+  pendingThrustD = thrustD;
+  pendingMotorIndex = 0;
+  motorStartPending = true;
+  motorStartLastMillis = millis();
+  
+  // 起動時刻記録をリセット
+  motorAStartTime = 0;
+  motorBStartTime = 0;
+  motorCStartTime = 0;
+  motorDStartTime = 0;
+  
+  // 最初のモーターを即座に起動（thrustが0でない最初のモーター、100%で起動）
+  if (thrustA != 0.0) {
+    controlMotorSingle(INRIGHT_A, INRIGHT_B, thrustA, true); // 100%で起動
+    motorAStartTime = millis();
+    motorAThrust = thrustA;
+    pendingMotorIndex = 1;
+    motorStartLastMillis = millis();
+  } else if (thrustB != 0.0) {
+    controlMotorSingle(INFRONT_A, INFRONT_B, thrustB, true); // 100%で起動
+    motorBStartTime = millis();
+    motorBThrust = thrustB;
+    pendingMotorIndex = 2;
+    motorStartLastMillis = millis();
+  } else if (thrustC != 0.0) {
+    controlMotorSingle(INLEFT_A, INLEFT_B, thrustC, true); // 100%で起動
+    motorCStartTime = millis();
+    motorCThrust = thrustC;
+    pendingMotorIndex = 3;
+    motorStartLastMillis = millis();
+  } else if (thrustD != 0.0) {
+    controlMotorSingle(INBACK_A, INBACK_B, thrustD, true); // 100%で起動
+    motorDStartTime = millis();
+    motorDThrust = thrustD;
+    pendingMotorIndex = 4; // すべて起動済み
+    motorStartPending = false;
+  } else {
+    // すべてのモーターが停止状態
+    pendingMotorIndex = 4;
+    motorStartPending = false;
+  }
 
   Serial.print("Direction: ");
   Serial.print(direction);
@@ -280,7 +456,39 @@ class MyCallbacks : public BLECharacteristicCallbacks {
       return;
     }
 
-    // 2. 8方向の数値ならモーター制御 ("0","45",...,"315")
+    // 2. "test" → 全てのモーターを順番に1秒ずつ正転
+    if (value == "test") {
+      Serial.println("[MOTOR] Test mode: Running all motors sequentially for 1 second each");
+      
+      // モーターA（右）を1秒正転
+      Serial.println("[MOTOR] Motor A (Right) - Forward 1 second");
+      controlMotorSingle(INRIGHT_A, INRIGHT_B, 1.0);
+      delay(1000);
+      controlMotorSingle(INRIGHT_A, INRIGHT_B, 0.0);
+      
+      // モーターB（前）を1秒正転
+      Serial.println("[MOTOR] Motor B (Front) - Forward 1 second");
+      controlMotorSingle(INFRONT_A, INFRONT_B, 1.0);
+      delay(1000);
+      controlMotorSingle(INFRONT_A, INFRONT_B, 0.0);
+      
+      // モーターC（左）を1秒正転
+      Serial.println("[MOTOR] Motor C (Left) - Forward 1 second");
+      controlMotorSingle(INLEFT_A, INLEFT_B, 1.0);
+      delay(1000);
+      controlMotorSingle(INLEFT_A, INLEFT_B, 0.0);
+      
+      // モーターD（後）を1秒正転
+      Serial.println("[MOTOR] Motor D (Back) - Forward 1 second");
+      controlMotorSingle(INBACK_A, INBACK_B, 1.0);
+      delay(1000);
+      controlMotorSingle(INBACK_A, INBACK_B, 0.0);
+      
+      Serial.println("[MOTOR] Test mode completed");
+      return;
+    }
+
+    // 3. 8方向の数値ならモーター制御 ("0","45",...,"315")
     if (value == "0"   || value == "45"  || value == "90"  ||
         value == "135" || value == "180" || value == "225" ||
         value == "270" || value == "315") {
@@ -297,7 +505,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
       return;
     }
 
-    // 3. その他の任意テキスト → LEDを一定時間点灯
+    // 4. その他の任意テキスト → LEDを一定時間点灯
     ledOnForDuration(LED_ON_DURATION_MS);
   }
 };
@@ -316,15 +524,26 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-  // モーター用ピンの初期化
-  pinMode(INRIGHT_A, OUTPUT);
-  pinMode(INRIGHT_B, OUTPUT);
-  pinMode(INFRONT_A, OUTPUT);
-  pinMode(INFRONT_B, OUTPUT);
-  pinMode(INLEFT_A, OUTPUT);
-  pinMode(INLEFT_B, OUTPUT);
-  pinMode(INBACK_A, OUTPUT);
-  pinMode(INBACK_B, OUTPUT);
+  // MODEピン初期化（常にLOWを出力）
+  pinMode(MODE, OUTPUT);
+  digitalWrite(MODE, LOW);
+
+  // モーター用ピンの初期化とPWMチャンネルの設定（チャンネルは自動で割り当てられる）
+  // モーターA（右）
+  ledcAttach(INRIGHT_A, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttach(INRIGHT_B, PWM_FREQUENCY, PWM_RESOLUTION);
+  
+  // モーターB（前）
+  ledcAttach(INFRONT_A, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttach(INFRONT_B, PWM_FREQUENCY, PWM_RESOLUTION);
+  
+  // モーターC（左）
+  ledcAttach(INLEFT_A, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttach(INLEFT_B, PWM_FREQUENCY, PWM_RESOLUTION);
+  
+  // モーターD（後）
+  ledcAttach(INBACK_A, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttach(INBACK_B, PWM_FREQUENCY, PWM_RESOLUTION);
 
   // 初期状態は全モーター停止
   controlMotor(0, false);
@@ -368,9 +587,13 @@ void setup() {
 void loop() {
   // すべてコールバック駆動だが、LED の非同期点滅制御を更新する
   updateLedBlink();
+  
+  // モーターの非同期起動制御を更新する
+  updateMotorStart();
+  
+  // モーターのデューティ比を100%から70%に切り替える処理
+  updateMotorDutyCycle();
 
   // ループ周期を短くしすぎないための軽いウェイト
   delay(100);
 }
-
-

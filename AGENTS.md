@@ -4,6 +4,8 @@
 
 このプロジェクトは、ESP32とWeb Bluetooth APIを使用した力覚フィードバックデバイスの性能評価実験システムです。ESP32がBLEペリフェラルとして動作し、React Webアプリケーションから制御を受け、4つのモーター（L9110Sドライバ）で8方向の推力提示を行います。
 
+また、DJI Telloドローンを使用した方向提示デバイスとしての機能も提供しています。`vertical_force`手法を選択した場合、Telloドローンが8方向に移動して方向提示を行います。
+
 ## ディレクトリ構造
 
 ```
@@ -14,10 +16,15 @@ force_feedback_device/
 │   │   ├── App.css             # アプリケーションスタイル
 │   │   ├── main.tsx            # エントリーポイント
 │   │   ├── bleConnection.ts     # BLE接続状態管理（グローバル）
+│   │   ├── telloConnection.ts   # Tello接続状態管理
 │   │   ├── bluetooth.d.ts      # Web Bluetooth API型定義
 │   │   └── index.css           # グローバルスタイル
 │   ├── package.json
 │   └── vite.config.ts
+├── tello-server/                # Tello制御用バックエンドサーバー
+│   ├── server.py                # tellopyを使用したPythonサーバー
+│   ├── requirements.txt         # Python依存パッケージ
+│   └── package.json            # 旧Node.js設定（参考用）
 ├── quad_motor_control_ble.ino  # メインESP32スケッチ（モーター制御+BLE）
 ├── ble_led_ble_test.ino        # テスト用ESP32スケッチ（LED制御のみ）
 ├── quad_motor_control.ino      # モーター制御のみのベーススケッチ
@@ -38,29 +45,46 @@ force_feedback_device/
 - **BLEライブラリ**: ESP32 BLE Arduino
 - **モータードライバ**: L9110S（4チャンネル）
 
+### Tello制御（vertical_force手法）
+- **ドローン**: DJI Tello
+- **ライブラリ**: tellopy (Python)
+- **通信**: tellopy経由（バックエンドサーバー経由）
+- **バックエンド**: Python + Flask
+- **特徴**: Tello SDK 2.0の自動安全機能を回避し、腕に装着した状態でも制御可能
+
 ## 主要機能
 
 ### 1. ホーム画面 (`/`)
-- **BLEデバイス接続管理**
+- **BLEデバイス接続管理**（`horizontal_force`手法の場合）
   - デバイス選択・接続・切断
   - 接続状態の表示
   - 接続ログの表示
+  - テキスト送信機能（デバッグ用）
+- **Tello接続管理**（`vertical_force`手法の場合）
+  - Tello接続・切断
+  - 接続状態の表示
+  - 接続ログの表示
+  - **簡易制御機能**
+    - 離陸・着陸ボタン
+    - 8方向（0, 45, 90, 135, 180, 225, 270, 315度）の制御ボタン
+    - 円形UIで直感的な操作
 - **実験設定**
   - 参加者番号入力
   - 手法選択（`horizontal_force` / `vertical_force`）
-  - 実験開始ボタン（BLE接続必須）
-- **テキスト送信機能**（デバッグ用）
-  - 任意のテキストをBLEデバイスに送信
+  - 実験開始ボタン（選択した手法に応じた接続必須）
 
 ### 2. 実験画面 (`/experiment`)
 - **実験フロー**
   1. 開始ボタンで実験開始
   2. 8方向×2セット（計16試行）をランダム順で提示
   3. 各タスク:
-     - 3秒待機 → BLEで方向送信 → 3秒間モーター動作
+     - **horizontal_force手法の場合**:
+       - 3秒待機 → BLEで方向送信 → 3秒間モーター動作
+     - **vertical_force手法の場合**:
+       - 3秒待機 → Telloを自動離陸 → 方向送信でTello移動 → 3秒間提示
      - 円形回答エリアで方向をクリック（1°刻み）
      - 「次のタスク」または「スキップ」で次へ
-  4. 全試行完了後、CSVダウンロード
+  4. 全試行完了後、自動的に着陸（vertical_forceの場合）→ CSVダウンロード
 - **回答記録**
   - 正解方向（0, 45, 90, 135, 180, 225, 270, 315度）
   - 参加者の回答角度（0-360度、または-1=スキップ）
@@ -163,6 +187,7 @@ P001,horizontal_force,0,90,87.5,2340
 - **ランダム化**: 1セット（8方向）をシャッフル → 2セット目をシャッフル → 結合
 - **スキップ処理**: `responseAngle = -1`として記録、自動で次タスクへ
 - **タイマー競合**: 前タスクのタイマーを必ずクリア
+- **Tello制御**: 実験開始時に自動離陸、終了時に自動着陸
 
 ## 既知の問題・改善点
 
@@ -183,6 +208,19 @@ npm run build    # 本番ビルド
 - ESP32ボードを選択
 - 必要なライブラリをインストール（ESP32 BLE Arduino）
 - アップロード
+
+### Telloサーバー（vertical_force手法を使用する場合）
+```bash
+cd tello-server
+pip install -r requirements.txt
+python server.py      # サーバー起動（localhost:3001）
+```
+
+**注意**: Telloサーバーを起動する前に、以下を確認してください：
+- Python 3.7以上がインストールされていること
+- TelloがWi-Fiに接続されていること
+- PC/MacがTelloと同じWi-Fiネットワークに接続されていること
+- tellopyパッケージがインストールされていること（`pip install tellopy`）
 
 ## ファイル変更時の影響範囲
 
@@ -210,10 +248,33 @@ npm run build    # 本番ビルド
 - `[BLE] Received: ...`で受信データ確認
 - `[MOTOR] Run direction ... deg`でモーター動作確認
 
+## Tello制御の詳細
+
+### tellopyの特徴
+- **自動安全機能の回避**: Tello SDK 2.0の自動安全機能を回避し、腕に装着した状態でも制御可能
+- **速度ベース制御**: `drone.forward(speed)`, `drone.left(speed)`などの速度ベースの制御
+- **8方向移動**: 方向（度）を指定して直接移動
+
+### APIエンドポイント
+- `POST /api/tello/connect`: Telloに接続（tellopy経由）
+- `POST /api/tello/disconnect`: Telloから切断
+- `POST /api/tello/takeoff`: 離陸
+- `POST /api/tello/land`: 着陸
+- `POST /api/tello/direction`: 方向（度）を指定して移動
+- `POST /api/tello/command`: SDKコマンド文字列を実行（互換性のため）
+- `GET /api/tello/status`: 接続状態確認
+
+### ホーム画面の簡易制御
+- Tello接続後、簡易制御セクションが表示される
+- 離陸・着陸ボタンでTelloの離着陸を制御
+- 8方向のボタンをクリックしてTelloを移動
+- 操作ログが表示される
+
 ## 今後の拡張可能性
 
 - 実験パラメータの動的変更（待機時間・動作時間等）
 - リアルタイムデータ可視化（グラフ表示）
 - 複数参加者の結果比較機能
 - 実験設定の保存・読み込み機能
+- Telloのビデオストリーム表示（ホーム画面の簡易制御に追加）
 

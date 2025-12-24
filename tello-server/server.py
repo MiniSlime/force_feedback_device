@@ -17,7 +17,7 @@ CORS(app)
 drone = None
 is_connected = False
 move_speed = 30  # 移動速度（0-100）
-move_duration = 1.0  # 移動時間（秒）
+move_duration = 3.0  # 移動時間（秒）
 
 def init_drone():
     """Telloドローンの初期化"""
@@ -309,58 +309,39 @@ def direction():
         }), 500
 
 def move_drone_by_direction(direction_deg):
-    """方向（度）に基づいてTelloを移動（tellopyの速度ベース制御）"""
     global drone
     
-    # 8方向にマッピング
-    if direction_deg >= 337.5 or direction_deg < 22.5:
-        # 0度（右）
-        drone.right(move_speed)
-        time.sleep(move_duration)
-        drone.right(0)
-    elif direction_deg >= 22.5 and direction_deg < 67.5:
-        # 45度（右上）- 前進と右を同時に
-        drone.forward(move_speed)
-        drone.right(move_speed)
-        time.sleep(move_duration)
-        drone.forward(0)
-        drone.right(0)
-    elif direction_deg >= 67.5 and direction_deg < 112.5:
-        # 90度（上）
-        drone.forward(move_speed)
-        time.sleep(move_duration)
-        drone.forward(0)
-    elif direction_deg >= 112.5 and direction_deg < 157.5:
-        # 135度（左上）- 前進と左を同時に
-        drone.forward(move_speed)
-        drone.left(move_speed)
-        time.sleep(move_duration)
-        drone.forward(0)
-        drone.left(0)
-    elif direction_deg >= 157.5 and direction_deg < 202.5:
-        # 180度（左）
-        drone.left(move_speed)
-        time.sleep(move_duration)
-        drone.left(0)
-    elif direction_deg >= 202.5 and direction_deg < 247.5:
-        # 225度（左下）- 後退と左を同時に
-        drone.backward(move_speed)
-        drone.left(move_speed)
-        time.sleep(move_duration)
-        drone.backward(0)
-        drone.left(0)
-    elif direction_deg >= 247.5 and direction_deg < 292.5:
-        # 270度（下）
-        drone.backward(move_speed)
-        time.sleep(move_duration)
-        drone.backward(0)
-    elif direction_deg >= 292.5 and direction_deg < 337.5:
-        # 315度（右下）- 後退と右を同時に
-        drone.backward(move_speed)
-        drone.right(move_speed)
-        time.sleep(move_duration)
-        drone.backward(0)
-        drone.right(0)
+    # 角度をラジアンに変換して計算（8方位をベクトルで処理）
+    import math
+    rad = math.radians(direction_deg)
+    
+    # move_speedを各成分に分解 (0-100の範囲)
+    # Telloの座標系: pitch(前後), roll(左右)
+    # 0度=右(roll>0), 90度=前(pitch>0)
+    roll = int(move_speed * math.cos(rad))
+    pitch = int(move_speed * math.sin(rad))
+
+    print(f"Moving: pitch={pitch}, roll={roll}")
+
+    # --- 重要：離陸判定をバイパスするための試行 ---
+    # 通常のtakeoff()の代わりに、低速回転を指示
+    # (注意: 環境により、やはりtakeoffなしでは動かない場合があります)
+    
+    # 1. 瞬間的にスロットルを上げ下げして「やる気」を出す（機種による）
+    drone.set_throttle(10) 
+    time.sleep(0.1)
+    
+    # 2. 目的の方向に力をかける
+    drone.set_roll(roll)
+    drone.set_pitch(pitch)
+    
+    # 3. 指定時間維持
+    time.sleep(move_duration)
+    
+    # 4. 停止
+    drone.set_roll(0)
+    drone.set_pitch(0)
+    drone.set_throttle(0)
 
 if __name__ == '__main__':
     print('Tello server running on http://localhost:3001')
