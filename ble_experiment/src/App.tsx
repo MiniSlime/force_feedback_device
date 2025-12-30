@@ -231,8 +231,8 @@ function Home() {
   const isTelloConnecting = telloState === 'connecting'
   const isTelloConnected = telloState === 'connected'
 
-  // 実験開始ボタンの有効化条件（両方ともBLE接続が必要）
-  const canStartExperiment = participantId && isConnected
+  // 実験開始ボタンの有効化条件（参加者番号のみ必要、BLE接続は任意）
+  const canStartExperiment = !!participantId
 
   return (
     <div className="app-root">
@@ -393,6 +393,7 @@ function ExperimentPage() {
   const [results, setResults] = useState<TrialResult[]>([])
   const [isStimActive, setIsStimActive] = useState<boolean | null>(null)
   const [elapsedTimeMs, setElapsedTimeMs] = useState<number>(0)
+  const [isBleConnected, setIsBleConnected] = useState<boolean>(false)
 
   const stimTimeoutRef = useRef<number | null>(null)
   const elapsedTimeIntervalRef = useRef<number | null>(null)
@@ -409,14 +410,6 @@ function ExperimentPage() {
   const startTrial = useCallback(
     async (index: number, directions: number[]) => {
       const direction = directions[index]
-
-      // 両方の手法ともBLE接続を使用
-      const characteristic = getBleCharacteristic()
-      if (!characteristic) {
-        // ホーム画面での接続が失われている
-        setStatus('idle')
-        return
-      }
 
       // 前のタスクのタイマーをクリア
       if (stimTimeoutRef.current !== null) {
@@ -435,15 +428,13 @@ function ExperimentPage() {
       })
 
       try {
-        // 両方の手法ともBLE経由でESP32に送信
+        // BLE接続がある場合のみESP32に送信
         const characteristic = getBleCharacteristic()
-        if (!characteristic) {
-          setStatus('idle')
-          return
+        if (characteristic) {
+          const encoder = new TextEncoder()
+          await characteristic.writeValue(encoder.encode(String(direction)))
         }
-
-        const encoder = new TextEncoder()
-        const sendPromise = characteristic.writeValue(encoder.encode(String(direction)))
+        // BLE接続がない場合は送信をスキップして実験を続行
 
         // モーター動作と同時に「力覚提示中」表示とタイマーを開始
         setIsStimActive(true)
@@ -456,14 +447,20 @@ function ExperimentPage() {
         stimTimeoutRef.current = window.setTimeout(() => {
           setIsStimActive(false)
         }, 3000)
-
-        // BLE送信の完了を待つ（エラーハンドリングのため）
-        await sendPromise
       } catch (error) {
         console.error(error)
-        const errorMessage = (error as Error).message
-        alert(`エラーが発生しました: ${errorMessage}`)
-        setStatus('idle')
+        // BLE送信エラーでも実験は続行（接続がない場合など）
+        // モーター動作と同時に「力覚提示中」表示とタイマーを開始
+        setIsStimActive(true)
+        setResponseStartTime(performance.now())
+
+        // 3秒後に「力覚提示中」状態だけオフにする
+        if (stimTimeoutRef.current !== null) {
+          window.clearTimeout(stimTimeoutRef.current)
+        }
+        stimTimeoutRef.current = window.setTimeout(() => {
+          setIsStimActive(false)
+        }, 3000)
       }
     },
     [method],
@@ -472,15 +469,7 @@ function ExperimentPage() {
   const handleStart = useCallback(async () => {
     if (status !== 'idle' && status !== 'finished') return
 
-    // 両方の手法ともBLE接続を確認
-    const characteristic = getBleCharacteristic()
-    if (!characteristic) {
-      // ホーム画面でBLE接続されていない（または切断済み）
-      alert('実験を開始する前に、ホーム画面でBLEデバイスに接続してください。')
-      navigate('/')
-      return
-    }
-
+    // BLE接続は任意（接続がない場合は警告表示のみ）
     // 1セット目と2セット目をそれぞれシャッフルしてから結合
     // 各セット内では同じ方向は1度しか提示されない
     const set1 = shuffle([...BASE_DIRECTIONS])
@@ -490,7 +479,7 @@ function ExperimentPage() {
     setResults([])
     setCurrentIndex(0)
     await startTrial(0, directions)
-  }, [navigate, shuffle, startTrial, status, method])
+  }, [shuffle, startTrial, status, method])
 
   const handleResponseClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
@@ -647,6 +636,22 @@ function ExperimentPage() {
     }
   }, [responseStartTime])
 
+  // BLE接続状態を定期的にチェック
+  useEffect(() => {
+    const checkBleConnection = () => {
+      const characteristic = getBleCharacteristic()
+      setIsBleConnected(!!characteristic)
+    }
+
+    // 初回チェック
+    checkBleConnection()
+
+    // 定期的にチェック（500ms間隔）
+    const interval = setInterval(checkBleConnection, 500)
+
+    return () => clearInterval(interval)
+  }, [])
+
   // コンポーネントのクリーンアップ
   useEffect(
     () => () => {
@@ -667,7 +672,7 @@ function ExperimentPage() {
           {status === 'idle' && (
             <>
               <p className="helper-text">
-                「開始」を押すと最初のタスクが始まります。ホーム画面でBLE接続を行ってから開始してください。
+                「開始」を押すと最初のタスクが始まります。
               </p>
               <div className="button-row">
                 <button className="primary-button" onClick={handleStart}>
@@ -769,6 +774,14 @@ function ExperimentPage() {
           )}
         </section>
       </main>
+      {!isBleConnected && (
+        <div className="ble-warning-banner">
+          <span className="ble-warning-icon">⚠️</span>
+          <span className="ble-warning-text">
+            BLEデバイスに接続されていません。力覚提示は行われませんが、実験は続行できます。
+          </span>
+        </div>
+      )}
     </div>
   )
 }

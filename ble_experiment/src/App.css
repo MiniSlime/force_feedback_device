@@ -514,3 +514,30 @@ button {
   cursor: default;
   box-shadow: none;
 }
+
+/* BLE接続警告バナー */
+.ble-warning-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--danger-soft);
+  border-top: 2px solid rgba(239, 68, 68, 0.6);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1000;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.ble-warning-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ble-warning-text {
+  font-size: 13px;
+  color: #fecaca;
+  line-height: 1.5;
+}
