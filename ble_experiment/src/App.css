@@ -320,6 +320,9 @@ button {
   justify-content: center;
   align-items: center;
   margin-top: 12px;
+  padding: 20px; /* ラベルが切れないようにパディングを追加 */
+  min-width: 320px; /* 円（260px）+ ラベル分の余白 */
+  min-height: 320px;
 }
 
 .response-circle {

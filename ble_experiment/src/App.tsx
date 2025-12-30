@@ -269,6 +269,20 @@ function Home() {
 
           <div className="button-row end">
             <button
+              className="secondary-button"
+              onClick={() => {
+                const params = new URLSearchParams({
+                  participantId,
+                  method,
+                  practice: 'true',
+                })
+                navigate(`/experiment?${params.toString()}`)
+              }}
+              disabled={!canStartExperiment}
+            >
+              練習タスク
+            </button>
+            <button
               className="primary-button"
               onClick={() => {
                 const params = new URLSearchParams({
@@ -384,6 +398,7 @@ function ExperimentPage() {
 
   const participantId = searchParams.get('participantId') ?? ''
   const method = searchParams.get('method') ?? ''
+  const isPractice = searchParams.get('practice') === 'true'
 
   const [status, setStatus] = useState<TrialStatus>('idle')
   const [trialDirections, setTrialDirections] = useState<number[]>([])
@@ -714,6 +729,36 @@ function ExperimentPage() {
                       }}
                     />
                   )}
+                  {/* 角度ラベル */}
+                  {BASE_DIRECTIONS.map((angle) => {
+                    // 角度をラジアンに変換
+                    // 右を0°として反時計回りに進む角度（handleResponseClickと同じ座標系）
+                    const rad = (angle * Math.PI) / 180
+                    const labelRadius = 150 // ラベルの位置（円の外側）
+                    const labelX = Math.cos(rad) * labelRadius
+                    const labelY = -Math.sin(rad) * labelRadius // y軸を反転（画面座標は下が正）
+
+                    return (
+                      <div
+                        key={angle}
+                        className="response-angle-label"
+                        style={{
+                          position: 'absolute',
+                          left: '50%',
+                          top: '50%',
+                          transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                          color: 'rgba(148, 163, 184, 0.95)',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          pointerEvents: 'none',
+                          userSelect: 'none',
+                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)',
+                        }}
+                      >
+                        {angle}°
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
               <p className="response-hint">
@@ -724,12 +769,22 @@ function ExperimentPage() {
                     ? `${responseAngle.toFixed(1)}°`
                     : '未回答'}
               </p>
-              <p className="response-hint">
-                回答時間:{' '}
-                {responseStartTime != null
-                  ? `${(elapsedTimeMs / 1000).toFixed(2)}秒`
-                  : '計測開始前'}
-              </p>
+              {isPractice && (
+                <p className="response-hint">
+                  正解方向:{' '}
+                  {trialDirections[currentIndex] != null
+                    ? `${trialDirections[currentIndex]}°`
+                    : '未設定'}
+                </p>
+              )}
+              {isPractice && (
+                <p className="response-hint">
+                  回答時間:{' '}
+                  {responseStartTime != null
+                    ? `${(elapsedTimeMs / 1000).toFixed(2)}秒`
+                    : '計測開始前'}
+                </p>
+              )}
 
               <div className="button-row end">
                 <button
