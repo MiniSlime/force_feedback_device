@@ -46,9 +46,6 @@ const int INLEFT_B = 21; // ESP32 GPIO 21
 const int INBACK_A = 25; // ESP32 GPIO 25
 const int INBACK_B = 26; // ESP32 GPIO 26
 
-// MODEピン定義
-const int MODE = 23; // ESP32 GPIO 23
-
 // --------------------------------------------------------
 // LED & BLE 設定（@ble_led_ble_test.ino と同様）
 // --------------------------------------------------------
@@ -79,7 +76,7 @@ const unsigned long MOTOR_START_INTERVAL_MS = 100;
 // PWM制御設定
 const int PWM_FREQUENCY = 20000;       // PWM周波数 (Hz)
 const int PWM_RESOLUTION = 8;         // PWM解像度 (ビット)
-const int PWM_DUTY_CYCLE = 179;       // デューティー比70% (255 * 0.7 ≈ 179)
+const int PWM_DUTY_CYCLE = 255;       // デューティー比100% (255 * 1.0 = 255)
 const int PWM_DUTY_CYCLE_FULL = 255;  // デューティー比100% (起動時用)
 const unsigned long MOTOR_START_BOOST_MS = 100; // 起動時の100%回転時間 (ms)
 
@@ -523,10 +520,6 @@ void setup() {
   // LED 初期化
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
-
-  // MODEピン初期化（常にLOWを出力）
-  pinMode(MODE, OUTPUT);
-  digitalWrite(MODE, LOW);
 
   // モーター用ピンの初期化とPWMチャンネルの設定（チャンネルは自動で割り当てられる）
   // モーターA（右）

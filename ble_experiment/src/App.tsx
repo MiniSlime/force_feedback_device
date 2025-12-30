@@ -33,8 +33,8 @@ function Home() {
 
   // 実験ステータス用
   const [participantId, setParticipantId] = useState('')
-  const [method, setMethod] = useState<'horizontal_force' | 'vertical_force'>(
-    'horizontal_force',
+  const [method, setMethod] = useState<'wrist-worn' | 'hand-grip'>(
+    'wrist-worn',
   )
 
   // Tello接続状態
@@ -231,10 +231,8 @@ function Home() {
   const isTelloConnecting = telloState === 'connecting'
   const isTelloConnected = telloState === 'connected'
 
-  // 実験開始ボタンの有効化条件
-  const canStartExperiment =
-    participantId &&
-    (method === 'horizontal_force' ? isConnected : isTelloConnected)
+  // 実験開始ボタンの有効化条件（両方ともBLE接続が必要）
+  const canStartExperiment = participantId && isConnected
 
   return (
     <div className="app-root">
@@ -261,11 +259,11 @@ function Home() {
               className="select-input"
               value={method}
               onChange={(e) =>
-                setMethod(e.target.value as 'horizontal_force' | 'vertical_force')
+                setMethod(e.target.value as 'wrist-worn' | 'hand-grip')
               }
             >
-              <option value="horizontal_force">horizontal_force</option>
-              <option value="vertical_force">vertical_force</option>
+              <option value="wrist-worn">Wrist-worn</option>
+              <option value="hand-grip">Hand-grip</option>
             </select>
           </div>
 
@@ -286,9 +284,9 @@ function Home() {
           </div>
         </section>
 
-        {method === 'horizontal_force' && (
-          <section className="card">
-            <h2>デバイス接続（BLE）</h2>
+        {/* 両方の手法ともBLE接続を使用 */}
+        <section className="card">
+          <h2>デバイス接続（BLE）</h2>
           <p className="status-text">
             状態: <span className={`status-pill status-${bleState}`}>{bleState}</span>
           </p>
@@ -314,98 +312,11 @@ function Home() {
           <p className="helper-text">
             接続時にブラウザがデバイス選択ダイアログを表示します。
           </p>
-          </section>
-        )}
+        </section>
 
-        {method === 'vertical_force' && (
-          <>
-            <section className="card">
-              <h2>デバイス接続（Tello）</h2>
-              <p className="status-text">
-                状態:{' '}
-                <span className={`status-pill status-${telloState}`}>
-                  {telloState}
-                </span>
-              </p>
-              <p className="device-name">デバイス: DJI Tello</p>
-              <div className="button-row">
-                <button
-                  className="primary-button"
-                  onClick={handleConnectTello}
-                  disabled={isTelloConnecting || isTelloConnected}
-                >
-                  {isTelloConnecting ? '接続中...' : 'Telloに接続'}
-                </button>
-                <button
-                  className="secondary-button"
-                  onClick={handleDisconnectTello}
-                  disabled={!isTelloConnected}
-                >
-                  切断
-                </button>
-              </div>
-              <p className="helper-text">
-                TelloをWi-Fiに接続し、バックエンドサーバーが起動していることを確認してください。
-              </p>
-            </section>
-
-            {telloState === 'connected' && (
-              <section className="card">
-                <h2>簡易制御</h2>
-                <div className="button-row" style={{ marginBottom: '12px' }}>
-                  <button
-                    className="primary-button"
-                    onClick={handleTelloTakeoff}
-                    disabled={telloState !== 'connected'}
-                  >
-                    離陸
-                  </button>
-                  <button
-                    className="secondary-button"
-                    onClick={handleTelloLand}
-                    disabled={telloState !== 'connected'}
-                  >
-                    着陸
-                  </button>
-                </div>
-                <div className="tello-control-area">
-                  <div className="tello-control-circle">
-                    {BASE_DIRECTIONS.map((direction) => {
-                      const angle = -direction * (Math.PI / 180) // 反時計回り、上を0度
-                      const radius = 80
-                      const x = Math.cos(angle) * radius
-                      const y = Math.sin(angle) * radius
-                      const label = direction === 0 ? '右' : direction === 45 ? '右上' : direction === 90 ? '上' : direction === 135 ? '左上' : direction === 180 ? '左' : direction === 225 ? '左下' : direction === 270 ? '下' : '右下'
-
-                      return (
-                        <button
-                          key={direction}
-                          className="tello-direction-button"
-                          onClick={() => handleTelloDirection(direction)}
-                          disabled={telloState !== 'connected'}
-                          style={{
-                            transform: `translate(${x}px, ${y}px)`,
-                          }}
-                          title={`${direction}度 (${label})`}
-                        >
-                          {direction}°
-                        </button>
-                      )
-                    })}
-                    <div className="tello-control-center" />
-                  </div>
-                </div>
-                <p className="helper-text">
-                  8方向のボタンをクリックしてTelloを移動させることができます。
-                </p>
-              </section>
-            )}
-          </>
-        )}
-
-        {method === 'horizontal_force' && (
-          <section className="card">
-            <h2>テキスト送信テスト</h2>
+        {/* テキスト送信テスト（両方の手法で使用可能） */}
+        <section className="card">
+          <h2>テキスト送信テスト</h2>
           <label className="field-label" htmlFor="textToSend">
             送信するテキスト
           </label>
@@ -431,8 +342,7 @@ function Home() {
               テキスト送信には、先にBLEデバイスへ接続する必要があります。
             </p>
           )}
-          </section>
-        )}
+        </section>
 
         <section className="card log-card">
           <h2>ログ</h2>
@@ -500,20 +410,12 @@ function ExperimentPage() {
     async (index: number, directions: number[]) => {
       const direction = directions[index]
 
-      // methodに応じて接続を確認
-      if (method === 'horizontal_force') {
-        const characteristic = getBleCharacteristic()
-        if (!characteristic) {
-          // ホーム画面での接続が失われている
-          setStatus('idle')
-          return
-        }
-      } else if (method === 'vertical_force') {
-        if (!isTelloConnected()) {
-          // Tello接続が失われている
-          setStatus('idle')
-          return
-        }
+      // 両方の手法ともBLE接続を使用
+      const characteristic = getBleCharacteristic()
+      if (!characteristic) {
+        // ホーム画面での接続が失われている
+        setStatus('idle')
+        return
       }
 
       // 前のタスクのタイマーをクリア
@@ -533,62 +435,30 @@ function ExperimentPage() {
       })
 
       try {
-        if (method === 'horizontal_force') {
-          // BLE経由でESP32に送信
-          const characteristic = getBleCharacteristic()
-          if (!characteristic) {
-            setStatus('idle')
-            return
-          }
-
-          const encoder = new TextEncoder()
-          const sendPromise = characteristic.writeValue(encoder.encode(String(direction)))
-
-          // モーター動作と同時に「力覚提示中」表示とタイマーを開始
-          setIsStimActive(true)
-          setResponseStartTime(performance.now())
-
-          // 3秒後に「力覚提示中」状態だけオフにする
-          if (stimTimeoutRef.current !== null) {
-            window.clearTimeout(stimTimeoutRef.current)
-          }
-          stimTimeoutRef.current = window.setTimeout(() => {
-            setIsStimActive(false)
-          }, 3000)
-
-          // BLE送信の完了を待つ（エラーハンドリングのため）
-          await sendPromise
-        } else if (method === 'vertical_force') {
-          // Telloに方向を送信
-          const sendPromise = sendTelloDirection(direction)
-
-          // ドローン動作と同時に「力覚提示中」表示とタイマーを開始
-          setIsStimActive(true)
-          setResponseStartTime(performance.now())
-
-          // 3秒後に「力覚提示中」状態だけオフにする
-          if (stimTimeoutRef.current !== null) {
-            window.clearTimeout(stimTimeoutRef.current)
-          }
-          stimTimeoutRef.current = window.setTimeout(() => {
-            setIsStimActive(false)
-          }, 3000)
-
-          // Tello送信の完了を待つ（エラーハンドリングのため）
-          try {
-            await sendPromise
-          } catch (error) {
-            // エラーが発生した場合はユーザーに通知
-            const errorMessage = (error as Error).message
-            if (errorMessage.includes('No valid imu')) {
-              alert('Telloが離陸していません。実験を再開してください。')
-            } else {
-              alert(`Telloコマンドエラー: ${errorMessage}`)
-            }
-            setStatus('idle')
-            return
-          }
+        // 両方の手法ともBLE経由でESP32に送信
+        const characteristic = getBleCharacteristic()
+        if (!characteristic) {
+          setStatus('idle')
+          return
         }
+
+        const encoder = new TextEncoder()
+        const sendPromise = characteristic.writeValue(encoder.encode(String(direction)))
+
+        // モーター動作と同時に「力覚提示中」表示とタイマーを開始
+        setIsStimActive(true)
+        setResponseStartTime(performance.now())
+
+        // 3秒後に「力覚提示中」状態だけオフにする
+        if (stimTimeoutRef.current !== null) {
+          window.clearTimeout(stimTimeoutRef.current)
+        }
+        stimTimeoutRef.current = window.setTimeout(() => {
+          setIsStimActive(false)
+        }, 3000)
+
+        // BLE送信の完了を待つ（エラーハンドリングのため）
+        await sendPromise
       } catch (error) {
         console.error(error)
         const errorMessage = (error as Error).message
@@ -602,32 +472,13 @@ function ExperimentPage() {
   const handleStart = useCallback(async () => {
     if (status !== 'idle' && status !== 'finished') return
 
-    // methodに応じて接続を確認
-    if (method === 'horizontal_force') {
-      const characteristic = getBleCharacteristic()
-      if (!characteristic) {
-        // ホーム画面でBLE接続されていない（または切断済み）
-        alert('実験を開始する前に、ホーム画面でBLEデバイスに接続してください。')
-        navigate('/')
-        return
-      }
-    } else if (method === 'vertical_force') {
-      if (!isTelloConnected()) {
-        // ホーム画面でTello接続されていない（または切断済み）
-        alert('実験を開始する前に、ホーム画面でTelloに接続してください。')
-        navigate('/')
-        return
-      }
-    }
-
-    // Telloの場合は離陸
-    if (method === 'vertical_force') {
-      try {
-        await takeoffTello()
-      } catch (error) {
-        alert(`Tello離陸に失敗しました: ${(error as Error).message}`)
-        return
-      }
+    // 両方の手法ともBLE接続を確認
+    const characteristic = getBleCharacteristic()
+    if (!characteristic) {
+      // ホーム画面でBLE接続されていない（または切断済み）
+      alert('実験を開始する前に、ホーム画面でBLEデバイスに接続してください。')
+      navigate('/')
+      return
     }
 
     // 1セット目と2セット目をそれぞれシャッフルしてから結合
@@ -796,15 +647,6 @@ function ExperimentPage() {
     }
   }, [responseStartTime])
 
-  // 実験終了時にTelloを着陸
-  useEffect(() => {
-    if (status === 'finished' && method === 'vertical_force') {
-      landTello().catch((error) => {
-        console.error('Land error:', error)
-      })
-    }
-  }, [status, method])
-
   // コンポーネントのクリーンアップ
   useEffect(
     () => () => {
@@ -814,14 +656,8 @@ function ExperimentPage() {
       if (elapsedTimeIntervalRef.current !== null) {
         window.clearInterval(elapsedTimeIntervalRef.current)
       }
-      // ページを離れる際にTelloを着陸
-      if (method === 'vertical_force' && isTelloConnected()) {
-        landTello().catch((error) => {
-          console.error('Land error on unmount:', error)
-        })
-      }
     },
-    [method],
+    [],
   )
 
   return (
@@ -831,8 +667,7 @@ function ExperimentPage() {
           {status === 'idle' && (
             <>
               <p className="helper-text">
-                「開始」を押すと最初のタスクが始まります。ホーム画面で
-                {method === 'horizontal_force' ? 'BLE' : 'Tello'}接続を行ってから開始してください。
+                「開始」を押すと最初のタスクが始まります。ホーム画面でBLE接続を行ってから開始してください。
               </p>
               <div className="button-row">
                 <button className="primary-button" onClick={handleStart}>
