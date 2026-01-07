@@ -2,16 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
 import './App.css'
 import { getBleCharacteristic, setBleCharacteristic } from './bleConnection'
-import {
-  connectTello,
-  disconnectTello,
-  getTelloState,
-  isTelloConnected,
-  sendDirection as sendTelloDirection,
-  takeoffTello,
-  landTello,
-  type TelloState,
-} from './telloConnection'
 
 const BASE_DIRECTIONS = [0, 45, 90, 135, 180, 225, 270, 315]
 
@@ -37,98 +27,8 @@ function Home() {
     'wrist-worn',
   )
 
-  // Tello接続状態
-  const [telloState, setTelloState] = useState<TelloState>('disconnected')
-
   const appendLog = useCallback((message: string) => {
     setLog((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`])
-  }, [])
-
-  // Tello接続ハンドラー
-  const handleConnectTello = useCallback(async () => {
-    try {
-      setTelloState('connecting')
-      appendLog('Telloに接続中...')
-      await connectTello()
-      setTelloState('connected')
-      appendLog('Telloに接続しました。')
-    } catch (error) {
-      console.error(error)
-      appendLog(`Tello接続中にエラーが発生しました: ${(error as Error).message}`)
-      setTelloState('disconnected')
-    }
-  }, [appendLog])
-
-  // Tello切断ハンドラー
-  const handleDisconnectTello = useCallback(async () => {
-    try {
-      await disconnectTello()
-      setTelloState('disconnected')
-      appendLog('Telloから切断しました。')
-    } catch (error) {
-      console.error(error)
-      appendLog(`Tello切断中にエラーが発生しました: ${(error as Error).message}`)
-    }
-  }, [appendLog])
-
-  // Tello方向制御ハンドラー
-  const handleTelloDirection = useCallback(
-    async (direction: number) => {
-      if (telloState !== 'connected') {
-        appendLog('Telloに接続されていません。')
-        return
-      }
-
-      try {
-        await sendTelloDirection(direction)
-        appendLog(`Telloを${direction}度の方向に移動しました。`)
-      } catch (error) {
-        console.error(error)
-        appendLog(`Tello移動中にエラーが発生しました: ${(error as Error).message}`)
-      }
-    },
-    [appendLog, telloState],
-  )
-
-  // Tello離陸ハンドラー
-  const handleTelloTakeoff = useCallback(async () => {
-    if (telloState !== 'connected') {
-      appendLog('Telloに接続されていません。')
-      return
-    }
-
-    try {
-      await takeoffTello()
-      appendLog('Telloが離陸しました。')
-    } catch (error) {
-      console.error(error)
-      appendLog(`Tello離陸中にエラーが発生しました: ${(error as Error).message}`)
-    }
-  }, [appendLog, telloState])
-
-  // Tello着陸ハンドラー
-  const handleTelloLand = useCallback(async () => {
-    if (telloState !== 'connected') {
-      appendLog('Telloに接続されていません。')
-      return
-    }
-
-    try {
-      await landTello()
-      appendLog('Telloが着陸しました。')
-    } catch (error) {
-      console.error(error)
-      appendLog(`Tello着陸中にエラーが発生しました: ${(error as Error).message}`)
-    }
-  }, [appendLog, telloState])
-
-  // Tello状態を定期的に更新
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentState = getTelloState()
-      setTelloState(currentState)
-    }, 500)
-    return () => clearInterval(interval)
   }, [])
 
   const handleConnect = useCallback(async () => {
@@ -228,8 +128,6 @@ function Home() {
 
   const isConnecting = bleState === 'connecting'
   const isConnected = bleState === 'connected'
-  const isTelloConnecting = telloState === 'connecting'
-  const isTelloConnected = telloState === 'connected'
 
   // 実験開始ボタンの有効化条件（参加者番号のみ必要、BLE接続は任意）
   const canStartExperiment = !!participantId
@@ -588,6 +486,16 @@ function ExperimentPage() {
   const handleDownloadCsv = useCallback(() => {
     if (!results.length) return
 
+    // 角度の差を計算する関数（循環を考慮、0-180度の範囲で返す）
+    const calculateAngleError = (trueDir: number, responseDir: number): number => {
+      let diff = Math.abs(trueDir - responseDir)
+      // 360度の循環を考慮（例: 0度と350度の差は10度）
+      if (diff > 180) {
+        diff = 360 - diff
+      }
+      return diff
+    }
+
     const header = [
       'participantId',
       'method',
@@ -595,17 +503,39 @@ function ExperimentPage() {
       'trueDirection',
       'responseAngle',
       'responseTimeMs',
+      'error',
+      'isCorrect',
     ]
-    const lines = results.map((r) =>
-      [
+    const lines = results.map((r) => {
+      // スキップ時（responseAngle === -1）の処理
+      if (r.responseAngle === -1) {
+        return [
+          participantId,
+          method,
+          r.index,
+          r.trueDirection,
+          '-1',
+          Math.round(r.responseTimeMs),
+          '', // 誤差は計算しない
+          '-1', // 正答フラグは-1（スキップ）
+        ].join(',')
+      }
+
+      // 通常の回答時の処理
+      const error = calculateAngleError(r.trueDirection, r.responseAngle)
+      const isCorrect = error <= 30 ? 1 : 0 // 30度以内なら正答
+
+      return [
         participantId,
         method,
         r.index,
         r.trueDirection,
         r.responseAngle.toFixed(2),
         Math.round(r.responseTimeMs),
-      ].join(','),
-    )
+        error.toFixed(2),
+        isCorrect,
+      ].join(',')
+    })
 
     const csvContent = [header.join(','), ...lines].join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })

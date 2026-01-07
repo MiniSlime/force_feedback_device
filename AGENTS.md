@@ -78,7 +78,9 @@ force_feedback_device/
 - **回答記録**
   - 正解方向（0, 45, 90, 135, 180, 225, 270, 315度）
   - 参加者の回答角度（0-360度、または-1=スキップ）
-  - 回答時間（ミリ秒）
+  - 回答時間（ミリ秒、力覚提示開始から回答完了まで）
+  - 誤差（正解方向と回答角度の絶対誤差、度単位、360度の循環を考慮）
+  - 正答フラグ（誤差≤30度なら1、>30度なら0、スキップ時は-1）
   - **手法名**: CSVには`wrist-worn`または`hand-grip`が記録される（実験フローは同じ）
 
 ## BLE通信仕様
@@ -134,11 +136,23 @@ force_feedback_device/
 ### データ記録
 CSV形式:
 ```csv
-participantId,method,trialIndex,trueDirection,responseAngle,responseTimeMs
-P001,wrist-worn,0,90,87.5,2340
-P002,hand-grip,0,45,42.3,1890
+participantId,method,trialIndex,trueDirection,responseAngle,responseTimeMs,error,isCorrect
+P001,wrist-worn,0,90,87.5,2340,2.5,1
+P002,hand-grip,0,45,42.3,1890,2.7,1
+P003,wrist-worn,1,180,220.0,3120,40.0,0
+P004,hand-grip,2,270,-1,5000,,,
 ...
 ```
+
+**CSVカラム説明**:
+- `participantId`: 参加者番号
+- `method`: 使用手法（`wrist-worn`または`hand-grip`）
+- `trialIndex`: 試行番号（0から開始）
+- `trueDirection`: 正解方向（0, 45, 90, 135, 180, 225, 270, 315度）
+- `responseAngle`: 参加者の回答角度（0-360度、スキップ時は-1）
+- `responseTimeMs`: 回答時間（力覚提示開始から回答完了までの時間、ミリ秒）
+- `error`: 誤差（正解方向と回答角度の絶対誤差、度単位）。360度の循環を考慮して計算（例: 0度と350度の差は10度）。スキップ時は空文字
+- `isCorrect`: 正答フラグ（誤差≤30度なら1、>30度なら0、スキップ時は-1）
 
 **手法名の違い**: `wrist-worn`と`hand-grip`の2つの手法がありますが、実験フローは全く同じです。CSVに記録される手法名のみが異なります。
 
