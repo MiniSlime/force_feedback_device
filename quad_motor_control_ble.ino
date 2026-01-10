@@ -111,6 +111,11 @@ float motorCThrust = 0;                 // モーターCの推力方向（-1, 0,
 float motorDThrust = 0;                 // モーターDの推力方向（-1, 0, 1）
 int currentDutyCyclePercent = 100;     // 現在のデューティー比（%）
 
+// モーター自動停止用のタイマー
+bool motorAutoStopPending = false;      // 自動停止が予約されているか
+unsigned long motorRunStartTime = 0;     // モーター動作開始時刻（0=未動作）
+unsigned long motorRunDuration = 0;     // モーター動作時間（ms）
+
 // --------------------------------------------------------
 // グローバル変数
 // --------------------------------------------------------
@@ -430,6 +435,23 @@ void controlMotor(int direction, bool enabled, int dutyCyclePercent = 100) {
   Serial.println();
 }
 
+// モーター自動停止の更新処理（loop() から定期的に呼び出す）
+void updateMotorAutoStop() {
+  if (!motorAutoStopPending) {
+    return;
+  }
+
+  unsigned long now = millis();
+  if (motorRunStartTime > 0 && (now - motorRunStartTime >= motorRunDuration)) {
+    // 指定時間経過したのでモーターを停止
+    controlMotor(0, false);
+    motorAutoStopPending = false;
+    motorRunStartTime = 0;
+    motorRunDuration = 0;
+    Serial.println("[MOTOR] Auto-stopped after duration.");
+  }
+}
+
 // --------------------------------------------------------
 // BLE コールバック
 // --------------------------------------------------------
@@ -536,9 +558,13 @@ class MyCallbacks : public BLECharacteristicCallbacks {
       Serial.print(dutyCyclePercent);
       Serial.println("%");
 
+      // モーターを起動（非同期）
       controlMotor(direction, true, dutyCyclePercent);
-      delay(MOTOR_RUN_DURATION_MS);
-      controlMotor(0, false); // 停止
+      
+      // 自動停止を予約（delay()を使わず、loop()でタイマー管理）
+      motorAutoStopPending = true;
+      motorRunStartTime = millis();
+      motorRunDuration = MOTOR_RUN_DURATION_MS;
 
       return;
     }
@@ -625,9 +651,12 @@ void loop() {
   // モーターの非同期起動制御を更新する
   updateMotorStart();
   
-  // モーターのデューティ比を100%から70%に切り替える処理
+  // モーターのデューティ比を100%から指定デューティー比に切り替える処理
   updateMotorDutyCycle();
+  
+  // モーターの自動停止処理を更新する
+  updateMotorAutoStop();
 
   // ループ周期を短くしすぎないための軽いウェイト
-  delay(100);
+  delay(10); // 10msに短縮して応答性を向上
 }

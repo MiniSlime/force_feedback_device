@@ -340,40 +340,33 @@ function ExperimentPage() {
         window.setTimeout(resolve, 3000)
       })
 
+      // モーター動作と同時に「力覚提示中」表示とタイマーを開始（BLE送信の完了を待たない）
+      setIsStimActive(true)
+      setResponseStartTime(performance.now())
+
+      // 3秒後に「力覚提示中」状態だけオフにする
+      if (stimTimeoutRef.current !== null) {
+        window.clearTimeout(stimTimeoutRef.current)
+      }
+      stimTimeoutRef.current = window.setTimeout(() => {
+        setIsStimActive(false)
+      }, 3000)
+
+      // BLE接続がある場合のみESP32に送信（非ブロッキング）
       try {
-        // BLE接続がある場合のみESP32に送信
         const characteristic = getBleCharacteristic()
         if (characteristic) {
           const encoder = new TextEncoder()
-          await characteristic.writeValue(encoder.encode(String(direction)))
+          // writeValue()は非同期で実行（完了を待たない）
+          characteristic.writeValue(encoder.encode(String(direction))).catch((error) => {
+            console.error('BLE送信エラー:', error)
+            // エラーが発生しても実験は続行
+          })
         }
         // BLE接続がない場合は送信をスキップして実験を続行
-
-        // モーター動作と同時に「力覚提示中」表示とタイマーを開始
-        setIsStimActive(true)
-        setResponseStartTime(performance.now())
-
-        // 3秒後に「力覚提示中」状態だけオフにする
-        if (stimTimeoutRef.current !== null) {
-          window.clearTimeout(stimTimeoutRef.current)
-        }
-        stimTimeoutRef.current = window.setTimeout(() => {
-          setIsStimActive(false)
-        }, 3000)
       } catch (error) {
-        console.error(error)
-        // BLE送信エラーでも実験は続行（接続がない場合など）
-        // モーター動作と同時に「力覚提示中」表示とタイマーを開始
-        setIsStimActive(true)
-        setResponseStartTime(performance.now())
-
-        // 3秒後に「力覚提示中」状態だけオフにする
-        if (stimTimeoutRef.current !== null) {
-          window.clearTimeout(stimTimeoutRef.current)
-        }
-        stimTimeoutRef.current = window.setTimeout(() => {
-          setIsStimActive(false)
-        }, 3000)
+        console.error('BLE送信準備エラー:', error)
+        // エラーが発生しても実験は続行
       }
     },
     [method],

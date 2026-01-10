@@ -116,6 +116,66 @@ force_feedback_device/
   - 8方向: 0, 45, 90, 135, 180, 225, 270, 315度
   - デューティー比: 0-100%の範囲で指定可能（PWM制御）
 - **非同期LED点滅**: `ledBlinkPattern()`は非ブロッキング実装
+- **非同期モーター制御**: モーター動作は非ブロッキング実装（タイマーで自動停止）
+
+### ⚠️ 重要な設計原則: BLE制御の非同期処理
+
+**絶対に守るべき原則**:
+
+1. **ESP32側: `onWrite`コールバック内で`delay()`を使用しない**
+   - `onWrite`コールバック内で`delay()`を使用すると、BLE書き込みがブロックされ、Web側の`writeValue()`が完了するまで待機してしまう
+   - これにより、画面更新が遅延し、ユーザー体験が悪化する
+   - **正しい実装**: モーター制御は即座に開始し、`loop()`内のタイマー（`updateMotorAutoStop()`）で自動停止する
+
+2. **ESP32側: モーター制御は非同期で実装する**
+   - `controlMotor()`を呼び出した後、`delay(MOTOR_RUN_DURATION_MS)`で待機するのではなく、タイマー変数（`motorAutoStopPending`, `motorRunStartTime`, `motorRunDuration`）を設定する
+   - `loop()`内で`updateMotorAutoStop()`を定期的に呼び出し、指定時間経過後に自動停止する
+   - これにより、BLE書き込みは即座に完了し、Web側の応答性が保たれる
+
+3. **Web側: BLE送信の完了を待たずに画面更新を行う**
+   - `characteristic.writeValue()`の完了を`await`で待機すると、ESP32側の処理が完了するまでブロックされる可能性がある
+   - **正しい実装**: 画面更新（`setIsStimActive(true)`）をBLE送信の前に実行し、`writeValue()`は非ブロッキングで実行する（`.catch()`でエラーハンドリング）
+
+**過去の不具合例**:
+- ESP32側の`onWrite`内で`delay(MOTOR_RUN_DURATION_MS)`を使用していたため、BLE書き込みが3秒間ブロックされ、Web側の画面更新が遅延していた
+- 修正後: モーター制御を非同期化し、`loop()`内のタイマーで自動停止するように変更
+
+**実装例（ESP32側）**:
+```cpp
+// ❌ 間違った実装（ブロッキング）
+void onWrite(BLECharacteristic *pCharacteristic) {
+  controlMotor(direction, true, dutyCyclePercent);
+  delay(MOTOR_RUN_DURATION_MS);  // ← これがBLE書き込みをブロックする
+  controlMotor(0, false);
+}
+
+// ✅ 正しい実装（非ブロッキング）
+void onWrite(BLECharacteristic *pCharacteristic) {
+  controlMotor(direction, true, dutyCyclePercent);
+  // タイマーで自動停止を予約
+  motorAutoStopPending = true;
+  motorRunStartTime = millis();
+  motorRunDuration = MOTOR_RUN_DURATION_MS;
+  // 即座にreturn（ブロッキングしない）
+}
+
+void loop() {
+  // タイマーをチェックして自動停止
+  updateMotorAutoStop();
+}
+```
+
+**実装例（Web側）**:
+```typescript
+// ❌ 間違った実装（ブロッキング）
+await characteristic.writeValue(encoder.encode(String(direction)));
+setIsStimActive(true);  // ← 送信完了まで待機するため遅延
+
+// ✅ 正しい実装（非ブロッキング）
+setIsStimActive(true);  // ← 先に画面更新
+characteristic.writeValue(encoder.encode(String(direction)))
+  .catch((error) => console.error('BLE送信エラー:', error));
+```
 
 ### `ble_led_ble_test.ino`（テスト用）
 - BLE + LED制御のみ（モーター制御なし）
@@ -191,13 +251,16 @@ P004,hand-grip,2,270,-1,5000,,,
 - **ブラウザ制限**: Chrome/Edge等のChromium系のみ対応
 - **HTTPS必須**: 本番環境ではHTTPSが必要（localhostは例外）
 - **接続タイムアウト**: デバイスが見つからない場合はエラーハンドリング必須
+- **⚠️ 重要**: BLE送信の完了を待たずに画面更新を行う（非ブロッキング実装）
 
 ### ESP32
 - **モーター動作時間**: 3秒固定（`MOTOR_RUN_DURATION_MS`）
 - **デューティー比制御**: コマンドで0-100%の範囲で指定可能（PWM制御）
 - **モーター起動**: 起動時は100%で起動し、一定時間後に指定デューティー比に切り替え
 - **LED非同期処理**: `loop()`で`updateLedBlink()`を呼び出し
+- **モーター非同期処理**: `loop()`で`updateMotorAutoStop()`を呼び出し、タイマーで自動停止
 - **シリアル出力**: デバッグ情報は115200bpsで出力
+- **⚠️ 重要**: `onWrite`コールバック内で`delay()`を使用しない（BLE書き込みがブロックされる）
 
 ### 実験フロー
 - **ランダム化**: 1セット（8方向）をシャッフル → 2セット目をシャッフル → 結合
