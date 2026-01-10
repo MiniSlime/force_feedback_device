@@ -294,6 +294,8 @@ type TrialResult = {
   dutyCycle: number
   responseAngle: number
   responseTimeMs: number
+  clarity: number | null // 力覚の分かりやすさ（1-7、nullは未回答）
+  confidence: number | null // 回答への確信度（1-7、nullは未回答）
 }
 
 function ExperimentPage() {
@@ -313,6 +315,10 @@ function ExperimentPage() {
   const [isStimActive, setIsStimActive] = useState<boolean | null>(null)
   const [elapsedTimeMs, setElapsedTimeMs] = useState<number>(0)
   const [isBleConnected, setIsBleConnected] = useState<boolean>(false)
+  const [showQuestionnaire, setShowQuestionnaire] = useState<boolean>(false)
+  const [questionnaireClarity, setQuestionnaireClarity] = useState<number | null>(null)
+  const [questionnaireConfidence, setQuestionnaireConfidence] = useState<number | null>(null)
+  const [pendingTrialResult, setPendingTrialResult] = useState<TrialResult | null>(null)
 
   const stimTimeoutRef = useRef<number | null>(null)
   const elapsedTimeIntervalRef = useRef<number | null>(null)
@@ -434,32 +440,27 @@ function ExperimentPage() {
     const startTime = responseStartTime ?? performance.now()
     const responseTimeMs = performance.now() - startTime
 
-    setResults((prev) => [
-      ...prev,
-      {
-        index: currentIndex,
-        trueDirection: trial.direction,
-        dutyCycle: trial.dutyCycle,
-        responseAngle: -1,
-        responseTimeMs,
-      },
-    ])
-
-    // 次のタスクに進む
-    const nextIndex = currentIndex + 1
-    if (nextIndex >= trialData.length) {
-      setStatus('finished')
-    } else {
-      setCurrentIndex(nextIndex)
-      await startTrial(nextIndex, trialData)
+    const trialResult: TrialResult = {
+      index: currentIndex,
+      trueDirection: trial.direction,
+      dutyCycle: trial.dutyCycle,
+      responseAngle: -1,
+      responseTimeMs,
+      clarity: null,
+      confidence: null,
     }
+
+    // アンケート画面を表示
+    setPendingTrialResult(trialResult)
+    setShowQuestionnaire(true)
+    setQuestionnaireClarity(null)
+    setQuestionnaireConfidence(null)
   }, [
     status,
     trialData,
     currentIndex,
     responseStartTime,
     isStimActive,
-    startTrial,
   ])
 
   const handleNextTask = useCallback(async () => {
@@ -471,25 +472,52 @@ function ExperimentPage() {
     const startTime = responseStartTime ?? performance.now()
     const responseTimeMs = performance.now() - startTime
 
-    setResults((prev) => [
-      ...prev,
-      {
-        index: currentIndex,
-        trueDirection: trial.direction,
-        dutyCycle: trial.dutyCycle,
-        responseAngle,
-        responseTimeMs,
-      },
-    ])
+    const trialResult: TrialResult = {
+      index: currentIndex,
+      trueDirection: trial.direction,
+      dutyCycle: trial.dutyCycle,
+      responseAngle,
+      responseTimeMs,
+      clarity: null,
+      confidence: null,
+    }
 
-    const nextIndex = currentIndex + 1
+    // アンケート画面を表示
+    setPendingTrialResult(trialResult)
+    setShowQuestionnaire(true)
+    setQuestionnaireClarity(null)
+    setQuestionnaireConfidence(null)
+  }, [currentIndex, responseAngle, responseStartTime, status, trialData])
+
+  const handleQuestionnaireSubmit = useCallback(async () => {
+    if (!pendingTrialResult || questionnaireClarity === null || questionnaireConfidence === null) {
+      return
+    }
+
+    // アンケート結果を含めて保存
+    const resultWithQuestionnaire: TrialResult = {
+      ...pendingTrialResult,
+      clarity: questionnaireClarity,
+      confidence: questionnaireConfidence,
+    }
+
+    setResults((prev) => [...prev, resultWithQuestionnaire])
+
+    // アンケート画面を閉じる
+    setShowQuestionnaire(false)
+    setPendingTrialResult(null)
+    setQuestionnaireClarity(null)
+    setQuestionnaireConfidence(null)
+
+    // 次のタスクに進む
+    const nextIndex = pendingTrialResult.index + 1
     if (nextIndex >= trialData.length) {
       setStatus('finished')
     } else {
       setCurrentIndex(nextIndex)
       await startTrial(nextIndex, trialData)
     }
-  }, [currentIndex, responseAngle, responseStartTime, startTrial, status, trialData])
+  }, [pendingTrialResult, questionnaireClarity, questionnaireConfidence, trialData, startTrial])
 
   const handleDownloadCsv = useCallback(() => {
     if (!results.length) return
@@ -514,6 +542,8 @@ function ExperimentPage() {
       'responseTimeMs',
       'error',
       'isCorrect',
+      'clarity',
+      'confidence',
     ]
     const lines = results.map((r) => {
       // スキップ時（responseAngle === -1）の処理
@@ -528,6 +558,8 @@ function ExperimentPage() {
           Math.round(r.responseTimeMs),
           '', // 誤差は計算しない
           '-1', // 正答フラグは-1（スキップ）
+          r.clarity !== null ? r.clarity.toString() : '',
+          r.confidence !== null ? r.confidence.toString() : '',
         ].join(',')
       }
 
@@ -545,6 +577,8 @@ function ExperimentPage() {
         Math.round(r.responseTimeMs),
         error.toFixed(2),
         isCorrect,
+        r.clarity !== null ? r.clarity.toString() : '',
+        r.confidence !== null ? r.confidence.toString() : '',
       ].join(',')
     })
 
@@ -644,7 +678,7 @@ function ExperimentPage() {
             </>
           )}
 
-          {status === 'stimulating' && (
+          {status === 'stimulating' && !showQuestionnaire && (
             <>
               <p className="helper-text">
                 3 秒後に力覚が 3 秒間提示されます。「力覚提示中」と表示されている間も含め、
@@ -747,6 +781,77 @@ function ExperimentPage() {
                   disabled={responseAngle == null}
                 >
                   次のタスク
+                </button>
+              </div>
+            </>
+          )}
+
+          {status === 'stimulating' && showQuestionnaire && (
+            <>
+              <h2>主観的評価</h2>
+              <p className="helper-text">
+                以下の質問について、7段階のリッカート尺度で回答してください。
+                <br />
+                （1：全くそう思わない ～ 7：非常にそう思う）
+              </p>
+
+              <div className="questionnaire-section">
+                <div className="questionnaire-item">
+                  <label className="questionnaire-label">
+                    力覚の分かりやすさ：提示された力覚が直感的に理解できたか
+                  </label>
+                  <div className="likert-scale">
+                    {[1, 2, 3, 4, 5, 6, 7].map((value) => (
+                      <label key={value} className="likert-option">
+                        <input
+                          type="radio"
+                          name="clarity"
+                          value={value}
+                          checked={questionnaireClarity === value}
+                          onChange={() => setQuestionnaireClarity(value)}
+                        />
+                        <span className="likert-number">{value}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="likert-labels">
+                    <span>全くそう思わない</span>
+                    <span>非常にそう思う</span>
+                  </div>
+                </div>
+
+                <div className="questionnaire-item">
+                  <label className="questionnaire-label">
+                    回答への確信度：回答した方向に対してどの程度確信があるか
+                  </label>
+                  <div className="likert-scale">
+                    {[1, 2, 3, 4, 5, 6, 7].map((value) => (
+                      <label key={value} className="likert-option">
+                        <input
+                          type="radio"
+                          name="confidence"
+                          value={value}
+                          checked={questionnaireConfidence === value}
+                          onChange={() => setQuestionnaireConfidence(value)}
+                        />
+                        <span className="likert-number">{value}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="likert-labels">
+                    <span>全くそう思わない</span>
+                    <span>非常にそう思う</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="button-row end">
+                <button
+                  className="primary-button"
+                  onClick={handleQuestionnaireSubmit}
+                  disabled={questionnaireClarity === null || questionnaireConfidence === null}
+                >
+                  次へ
                 </button>
               </div>
             </>

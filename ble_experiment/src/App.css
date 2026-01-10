@@ -544,3 +544,73 @@ button {
   color: #fecaca;
   line-height: 1.5;
 }
+
+/* アンケート画面スタイル */
+.questionnaire-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-top: 20px;
+}
+
+.questionnaire-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.questionnaire-label {
+  font-size: 14px;
+  color: var(--text-main);
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.likert-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+}
+
+.likert-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  flex: 1;
+  max-width: 60px;
+}
+
+.likert-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  accent-color: var(--accent);
+}
+
+.likert-number {
+  font-size: 14px;
+  color: var(--text-main);
+  font-weight: 500;
+  user-select: none;
+}
+
+.likert-option:hover .likert-number {
+  color: var(--accent);
+}
+
+.likert-option input[type="radio"]:checked + .likert-number {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.likert-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-subtle);
+  padding: 0 4px;
+}
