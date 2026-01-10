@@ -65,6 +65,9 @@ force_feedback_device/
   - 参加者番号入力
   - 手法選択（`wrist-worn` / `hand-grip`）
   - 実験開始ボタン（BLE接続必須）
+- **アンケート**（画面最下部に配置）
+  - 実験前アンケートボタン（`/pre-questionnaire`へ遷移）
+  - 実験後アンケートボタン（`/post-questionnaire`へ遷移）
 
 ### 2. 実験画面 (`/experiment`)
 - **実験フロー**（両方の手法とも同じフロー）
@@ -89,6 +92,31 @@ force_feedback_device/
     - 力覚の分かりやすさ（1-7、スキップ時は空文字）
     - 回答への確信度（1-7、スキップ時は空文字）
   - **手法名**: CSVには`wrist-worn`または`hand-grip`が記録される（実験フローは同じ）
+
+### 3. 実験前アンケート画面 (`/pre-questionnaire`)
+- **入力項目**（すべて必須）
+  - 参加者番号（記述）
+  - 名前（記述）
+  - 性別（選択：男・女・無回答）
+  - 利き手（選択：右利き・左利き・両利き・わからない）
+- **CSVダウンロード**
+  - 「結果をCSVでダウンロード」ボタンでCSVファイルをダウンロード
+  - ファイル名: `pre_questionnaire_{参加者番号}_{タイムスタンプ}.csv`
+  - エンコーディング: BOM付きUTF-8（Excel等で日本語が正しく表示される）
+  - CSVカラム: `participantId`, `name`, `gender`, `handedness`
+
+### 4. 実験後アンケート画面 (`/post-questionnaire`)
+- **入力項目**
+  - 参加者番号（記述、必須）
+  - どちらの手法がより好ましいと感じたか（選択、必須：Wrist-worn / Hand-grip / どちらも同じ / わからない）
+  - その理由（記述、任意）
+  - その他実験や手法に対する意見（記述、任意）
+- **CSVダウンロード**
+  - 「結果をCSVでダウンロード」ボタンでCSVファイルをダウンロード
+  - ファイル名: `post_questionnaire_{参加者番号}_{タイムスタンプ}.csv`
+  - エンコーディング: BOM付きUTF-8（Excel等で日本語が正しく表示される）
+  - CSVカラム: `participantId`, `preferredMethod`, `reason`, `comments`
+  - 理由と意見はCSVのエスケープ処理（ダブルクォートのエスケープ）を実装
 
 ## BLE通信仕様
 
@@ -237,6 +265,8 @@ P004,hand-grip,2,270,70,-1,5000,,,,
 
 **手法名の違い**: `wrist-worn`と`hand-grip`の2つの手法がありますが、実験フローは全く同じです。CSVに記録される手法名のみが異なります。
 
+**CSVエンコーディング**: すべてのCSVファイル（実験結果、実験前アンケート、実験後アンケート）はBOM付きUTF-8で保存されます。これにより、Excel等のアプリケーションで日本語が正しく表示されます。
+
 ## 重要な実装詳細
 
 ### BLE接続管理
@@ -323,15 +353,26 @@ python server.py      # サーバー起動（localhost:3001）
 - PC/MacがTelloと同じWi-Fiネットワークに接続されていること
 - tellopyパッケージがインストールされていること（`pip install tellopy`）
 
+## ルーティング
+
+アプリケーションは以下のルートを提供します：
+
+- `/`: ホーム画面（実験設定・BLE接続・アンケートボタン）
+- `/experiment`: 実験画面（力覚提示実験の実行）
+- `/pre-questionnaire`: 実験前アンケート画面
+- `/post-questionnaire`: 実験後アンケート画面
+
 ## ファイル変更時の影響範囲
 
 ### `App.tsx`変更時
-- ホーム画面・実験画面の両方に影響
-- BLE接続ロジック・実験フロー・UI表示
+- ホーム画面・実験画面・アンケート画面のすべてに影響
+- BLE接続ロジック・実験フロー・UI表示・ルーティング
+- アンケート機能（実験前・実験後）の追加・変更
 
 ### `App.css`変更時
 - 全画面のスタイルに影響
 - 実験画面専用スタイル（`.experiment-task-card`等）に注意
+- アンケート画面のスタイル
 
 ### ESP32スケッチ変更時
 - UUID変更時は`App.tsx`の`SERVICE_UUID`/`CHARACTERISTIC_UUID`も同期
@@ -385,10 +426,37 @@ python server.py      # サーバー起動（localhost:3001）
 - Tello関連のコード（`telloConnection.ts`、`tello-server/`など）は残していますが、現在は使用されていません
 - 実験フローからはTello関連の処理を削除しました
 
+## アンケート機能の実装詳細
+
+### 実験前アンケート
+- **画面**: `/pre-questionnaire`
+- **コンポーネント**: `PreQuestionnairePage`
+- **データ型**: `PreQuestionnaireData`
+  - `participantId`: string
+  - `name`: string
+  - `gender`: 'male' | 'female' | 'no-answer' | ''
+  - `handedness`: 'right' | 'left' | 'both' | 'unknown' | ''
+- **CSV出力**: BOM付きUTF-8、ファイル名は`pre_questionnaire_{参加者番号}_{タイムスタンプ}.csv`
+
+### 実験後アンケート
+- **画面**: `/post-questionnaire`
+- **コンポーネント**: `PostQuestionnairePage`
+- **データ型**: `PostQuestionnaireData`
+  - `participantId`: string
+  - `preferredMethod`: 'wrist-worn' | 'hand-grip' | 'both' | 'unknown' | ''
+  - `reason`: string（任意）
+  - `comments`: string（任意）
+- **CSV出力**: BOM付きUTF-8、ファイル名は`post_questionnaire_{参加者番号}_{タイムスタンプ}.csv`
+- **CSVエスケープ**: 理由と意見フィールドはダブルクォートをエスケープ（`""`）して保存
+
+### CSVエンコーディング
+すべてのCSVファイル（実験結果、実験前アンケート、実験後アンケート）はBOM付きUTF-8（`\uFEFF`を先頭に追加）で保存されます。これにより、Excel等のアプリケーションで日本語が正しく表示されます。
+
 ## 今後の拡張可能性
 
 - 実験パラメータの動的変更（待機時間・動作時間等）
 - リアルタイムデータ可視化（グラフ表示）
 - 複数参加者の結果比較機能
 - 実験設定の保存・読み込み機能
+- アンケート結果の集計・可視化機能
 
