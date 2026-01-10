@@ -3,14 +3,16 @@
 
   概要:
   - @quad_motor_control.ino と同様に L9110S で4つのモーターを制御
-  - モーター制御はPWM制御を使用（デューティー比70%）
+  - モーター制御はPWM制御を使用（デューティー比はコマンドで指定可能、0-100%）
   - @ble_led_ble_test.ino と同様に BLE ペリフェラルとして動作し、
     Webアプリ(React + Web Bluetooth)からのテキストメッセージを受信
   - 受信したテキストに応じて:
     - "BLINK"       : 内蔵LEDを点滅
     - 上記以外の任意テキスト : 内蔵LEDを一定時間点灯
-    - "0","45",...,"315" の 8方向数値 : controlMotor() を用いてその方向に推力を出す
+    - "0","45",...,"315" の 8方向数値 : controlMotor() を用いてその方向に推力を出す（デューティー比100%）
       → 一定時間動作させたあと自動で停止
+    - "0 50","90 75" などの形式 : 角度とデューティー比（0-100%）を指定して推力を出す
+      → 例: "0 50" = 角度0°、デューティー比50%で動作
 
   Webアプリ側:
   - 既に作成済みの BLE Text Sender (SERVICE_UUID / CHARACTERISTIC_UUID は下記と一致)
@@ -98,7 +100,7 @@ float pendingThrustD = 0;               // 起動待ちの推力D
 int pendingMotorIndex = 0;              // 次に起動するモーターのインデックス (0=A, 1=B, 2=C, 3=D)
 unsigned long motorStartLastMillis = 0;  // 最後にモーターを起動した時刻
 
-// モーター起動時刻記録（100%→70%切り替え用）
+// モーター起動時刻記録（100%→指定デューティー比切り替え用）
 unsigned long motorAStartTime = 0;      // モーターAの起動時刻（0=未起動）
 unsigned long motorBStartTime = 0;      // モーターBの起動時刻（0=未起動）
 unsigned long motorCStartTime = 0;      // モーターCの起動時刻（0=未起動）
@@ -107,6 +109,7 @@ float motorAThrust = 0;                 // モーターAの推力方向（-1, 0,
 float motorBThrust = 0;                 // モーターBの推力方向（-1, 0, 1）
 float motorCThrust = 0;                 // モーターCの推力方向（-1, 0, 1）
 float motorDThrust = 0;                 // モーターDの推力方向（-1, 0, 1）
+int currentDutyCyclePercent = 100;     // 現在のデューティー比（%）
 
 // --------------------------------------------------------
 // グローバル変数
@@ -169,8 +172,13 @@ void updateLedBlink() {
 // ヘルパー関数: モーター制御（PWM制御）
 // --------------------------------------------------------
 
-void controlMotorSingle(int inaPin, int inbPin, float thrust, bool useFullDuty = false) {
-  int dutyCycle = useFullDuty ? PWM_DUTY_CYCLE_FULL : PWM_DUTY_CYCLE;
+void controlMotorSingle(int inaPin, int inbPin, float thrust, int dutyCyclePercent = 100) {
+  // デューティー比を0-100%の範囲に制限
+  if (dutyCyclePercent < 0) dutyCyclePercent = 0;
+  if (dutyCyclePercent > 100) dutyCyclePercent = 100;
+  
+  // デューティー比をPWM値（0-255）に変換
+  int dutyCycle = (PWM_DUTY_CYCLE_FULL * dutyCyclePercent) / 100;
   
   if (thrust > 0.0) {
     // 正転
@@ -202,7 +210,7 @@ void updateMotorStart() {
     // pendingMotorIndex以降のモーターを順番にチェックして起動（1回の呼び出しで1つだけ）
     if (pendingMotorIndex == 0) {
       if (pendingThrustA != 0.0) {
-        controlMotorSingle(INRIGHT_A, INRIGHT_B, pendingThrustA, true); // 100%で起動
+        controlMotorSingle(INRIGHT_A, INRIGHT_B, pendingThrustA, 100); // 100%で起動
         motorAStartTime = millis();
         motorAThrust = pendingThrustA;
         pendingMotorIndex = 1;
@@ -211,7 +219,7 @@ void updateMotorStart() {
       }
     } else if (pendingMotorIndex == 1) {
       if (pendingThrustB != 0.0) {
-        controlMotorSingle(INFRONT_A, INFRONT_B, pendingThrustB, true); // 100%で起動
+        controlMotorSingle(INFRONT_A, INFRONT_B, pendingThrustB, 100); // 100%で起動
         motorBStartTime = millis();
         motorBThrust = pendingThrustB;
         pendingMotorIndex = 2;
@@ -220,7 +228,7 @@ void updateMotorStart() {
       }
     } else if (pendingMotorIndex == 2) {
       if (pendingThrustC != 0.0) {
-        controlMotorSingle(INLEFT_A, INLEFT_B, pendingThrustC, true); // 100%で起動
+        controlMotorSingle(INLEFT_A, INLEFT_B, pendingThrustC, 100); // 100%で起動
         motorCStartTime = millis();
         motorCThrust = pendingThrustC;
         pendingMotorIndex = 3;
@@ -229,7 +237,7 @@ void updateMotorStart() {
       }
     } else if (pendingMotorIndex == 3) {
       if (pendingThrustD != 0.0) {
-        controlMotorSingle(INBACK_A, INBACK_B, pendingThrustD, true); // 100%で起動
+        controlMotorSingle(INBACK_A, INBACK_B, pendingThrustD, 100); // 100%で起動
         motorDStartTime = millis();
         motorDThrust = pendingThrustD;
       }
@@ -242,31 +250,31 @@ void updateMotorStart() {
   }
 }
 
-// モーターのデューティ比を100%から70%に切り替える処理（loop() から定期的に呼び出す）
+// モーターのデューティ比を100%から指定デューティー比に切り替える処理（loop() から定期的に呼び出す）
 void updateMotorDutyCycle() {
   unsigned long now = millis();
   
-  // モーターA: 起動から一定時間経過したら70%に切り替え
+  // モーターA: 起動から一定時間経過したら指定デューティー比に切り替え
   if (motorAStartTime > 0 && (now - motorAStartTime >= MOTOR_START_BOOST_MS)) {
-    controlMotorSingle(INRIGHT_A, INRIGHT_B, motorAThrust, false); // 70%に切り替え
+    controlMotorSingle(INRIGHT_A, INRIGHT_B, motorAThrust, currentDutyCyclePercent);
     motorAStartTime = 0; // 処理済みフラグ
   }
   
-  // モーターB: 起動から一定時間経過したら70%に切り替え
+  // モーターB: 起動から一定時間経過したら指定デューティー比に切り替え
   if (motorBStartTime > 0 && (now - motorBStartTime >= MOTOR_START_BOOST_MS)) {
-    controlMotorSingle(INFRONT_A, INFRONT_B, motorBThrust, false); // 70%に切り替え
+    controlMotorSingle(INFRONT_A, INFRONT_B, motorBThrust, currentDutyCyclePercent);
     motorBStartTime = 0; // 処理済みフラグ
   }
   
-  // モーターC: 起動から一定時間経過したら70%に切り替え
+  // モーターC: 起動から一定時間経過したら指定デューティー比に切り替え
   if (motorCStartTime > 0 && (now - motorCStartTime >= MOTOR_START_BOOST_MS)) {
-    controlMotorSingle(INLEFT_A, INLEFT_B, motorCThrust, false); // 70%に切り替え
+    controlMotorSingle(INLEFT_A, INLEFT_B, motorCThrust, currentDutyCyclePercent);
     motorCStartTime = 0; // 処理済みフラグ
   }
   
-  // モーターD: 起動から一定時間経過したら70%に切り替え
+  // モーターD: 起動から一定時間経過したら指定デューティー比に切り替え
   if (motorDStartTime > 0 && (now - motorDStartTime >= MOTOR_START_BOOST_MS)) {
-    controlMotorSingle(INBACK_A, INBACK_B, motorDThrust, false); // 70%に切り替え
+    controlMotorSingle(INBACK_A, INBACK_B, motorDThrust, currentDutyCyclePercent);
     motorDStartTime = 0; // 処理済みフラグ
   }
 }
@@ -280,8 +288,9 @@ void updateMotorDutyCycle() {
  *                  270度: 後方向
  *                  45/135/225/315度: 斜め方向
  * @param enabled モーターのオン/オフ制御（true: 動作、false: 停止）
+ * @param dutyCyclePercent デューティー比（0-100%、デフォルト100%）
  */
-void controlMotor(int direction, bool enabled) {
+void controlMotor(int direction, bool enabled, int dutyCyclePercent = 100) {
   if (!enabled) {
     // モーター起動待ちをキャンセル
     motorStartPending = false;
@@ -308,6 +317,11 @@ void controlMotor(int direction, bool enabled) {
     Serial.println("Motors stopped.");
     return;
   }
+
+  // デューティー比を保存
+  currentDutyCyclePercent = dutyCyclePercent;
+  if (currentDutyCyclePercent < 0) currentDutyCyclePercent = 0;
+  if (currentDutyCyclePercent > 100) currentDutyCyclePercent = 100;
 
   // 動作確認用にLEDを点滅させる
   ledBlinkPattern(BLINK_COUNT, BLINK_INTERVAL_MS);
@@ -370,26 +384,27 @@ void controlMotor(int direction, bool enabled) {
   motorDStartTime = 0;
   
   // 最初のモーターを即座に起動（thrustが0でない最初のモーター、100%で起動）
+  // 起動時は100%で起動し、一定時間後に指定デューティー比に切り替える
   if (thrustA != 0.0) {
-    controlMotorSingle(INRIGHT_A, INRIGHT_B, thrustA, true); // 100%で起動
+    controlMotorSingle(INRIGHT_A, INRIGHT_B, thrustA, 100); // 100%で起動
     motorAStartTime = millis();
     motorAThrust = thrustA;
     pendingMotorIndex = 1;
     motorStartLastMillis = millis();
   } else if (thrustB != 0.0) {
-    controlMotorSingle(INFRONT_A, INFRONT_B, thrustB, true); // 100%で起動
+    controlMotorSingle(INFRONT_A, INFRONT_B, thrustB, 100); // 100%で起動
     motorBStartTime = millis();
     motorBThrust = thrustB;
     pendingMotorIndex = 2;
     motorStartLastMillis = millis();
   } else if (thrustC != 0.0) {
-    controlMotorSingle(INLEFT_A, INLEFT_B, thrustC, true); // 100%で起動
+    controlMotorSingle(INLEFT_A, INLEFT_B, thrustC, 100); // 100%で起動
     motorCStartTime = millis();
     motorCThrust = thrustC;
     pendingMotorIndex = 3;
     motorStartLastMillis = millis();
   } else if (thrustD != 0.0) {
-    controlMotorSingle(INBACK_A, INBACK_B, thrustD, true); // 100%で起動
+    controlMotorSingle(INBACK_A, INBACK_B, thrustD, 100); // 100%で起動
     motorDStartTime = millis();
     motorDThrust = thrustD;
     pendingMotorIndex = 4; // すべて起動済み
@@ -402,7 +417,9 @@ void controlMotor(int direction, bool enabled) {
 
   Serial.print("Direction: ");
   Serial.print(direction);
-  Serial.print(" deg, Thrusts - A:");
+  Serial.print(" deg, Duty: ");
+  Serial.print(currentDutyCyclePercent);
+  Serial.print("%, Thrusts - A:");
   Serial.print(thrustA, 0);
   Serial.print(" B:");
   Serial.print(thrustB, 0);
@@ -459,43 +476,67 @@ class MyCallbacks : public BLECharacteristicCallbacks {
       
       // モーターA（右）を1秒正転
       Serial.println("[MOTOR] Motor A (Right) - Forward 1 second");
-      controlMotorSingle(INRIGHT_A, INRIGHT_B, 1.0);
+      controlMotorSingle(INRIGHT_A, INRIGHT_B, 1.0, 100);
       delay(1000);
-      controlMotorSingle(INRIGHT_A, INRIGHT_B, 0.0);
+      controlMotorSingle(INRIGHT_A, INRIGHT_B, 0.0, 100);
       
       // モーターB（前）を1秒正転
       Serial.println("[MOTOR] Motor B (Front) - Forward 1 second");
-      controlMotorSingle(INFRONT_A, INFRONT_B, 1.0);
+      controlMotorSingle(INFRONT_A, INFRONT_B, 1.0, 100);
       delay(1000);
-      controlMotorSingle(INFRONT_A, INFRONT_B, 0.0);
+      controlMotorSingle(INFRONT_A, INFRONT_B, 0.0, 100);
       
       // モーターC（左）を1秒正転
       Serial.println("[MOTOR] Motor C (Left) - Forward 1 second");
-      controlMotorSingle(INLEFT_A, INLEFT_B, 1.0);
+      controlMotorSingle(INLEFT_A, INLEFT_B, 1.0, 100);
       delay(1000);
-      controlMotorSingle(INLEFT_A, INLEFT_B, 0.0);
+      controlMotorSingle(INLEFT_A, INLEFT_B, 0.0, 100);
       
       // モーターD（後）を1秒正転
       Serial.println("[MOTOR] Motor D (Back) - Forward 1 second");
-      controlMotorSingle(INBACK_A, INBACK_B, 1.0);
+      controlMotorSingle(INBACK_A, INBACK_B, 1.0, 100);
       delay(1000);
-      controlMotorSingle(INBACK_A, INBACK_B, 0.0);
+      controlMotorSingle(INBACK_A, INBACK_B, 0.0, 100);
       
       Serial.println("[MOTOR] Test mode completed");
       return;
     }
 
-    // 3. 8方向の数値ならモーター制御 ("0","45",...,"315")
-    if (value == "0"   || value == "45"  || value == "90"  ||
-        value == "135" || value == "180" || value == "225" ||
-        value == "270" || value == "315") {
-
-      int direction = value.toInt();
+    // 3. 8方向の数値ならモーター制御 ("0","45",...,"315" または "0 50", "90 75" など)
+    // 角度のみの場合は100%として動作（後方互換性）
+    int direction = -1;
+    int dutyCyclePercent = 100; // デフォルト100%
+    
+    // スペースで分割して角度とデューティー比を取得
+    int spaceIndex = value.indexOf(' ');
+    if (spaceIndex > 0) {
+      // "角度 デューティー比" の形式
+      String dirStr = value.substring(0, spaceIndex);
+      String dutyStr = value.substring(spaceIndex + 1);
+      direction = dirStr.toInt();
+      dutyCyclePercent = dutyStr.toInt();
+    } else {
+      // 角度のみの形式（後方互換性）
+      direction = value.toInt();
+      dutyCyclePercent = 100; // デフォルト100%
+    }
+    
+    // 8方向（0, 45, 90, 135, 180, 225, 270, 315度）かチェック
+    if (direction == 0   || direction == 45  || direction == 90  ||
+        direction == 135 || direction == 180 || direction == 225 ||
+        direction == 270 || direction == 315) {
+      
+      // デューティー比を0-100%の範囲に制限
+      if (dutyCyclePercent < 0) dutyCyclePercent = 0;
+      if (dutyCyclePercent > 100) dutyCyclePercent = 100;
+      
       Serial.print("[MOTOR] Run direction ");
       Serial.print(direction);
-      Serial.println(" deg");
+      Serial.print(" deg, duty cycle ");
+      Serial.print(dutyCyclePercent);
+      Serial.println("%");
 
-      controlMotor(direction, true);
+      controlMotor(direction, true, dutyCyclePercent);
       delay(MOTOR_RUN_DURATION_MS);
       controlMotor(0, false); // 停止
 
