@@ -283,9 +283,15 @@ function Home() {
 
 type TrialStatus = 'idle' | 'stimulating' | 'finished'
 
+type TrialData = {
+  direction: number
+  dutyCycle: number
+}
+
 type TrialResult = {
   index: number
   trueDirection: number
+  dutyCycle: number
   responseAngle: number
   responseTimeMs: number
 }
@@ -299,7 +305,7 @@ function ExperimentPage() {
   const isPractice = searchParams.get('practice') === 'true'
 
   const [status, setStatus] = useState<TrialStatus>('idle')
-  const [trialDirections, setTrialDirections] = useState<number[]>([])
+  const [trialData, setTrialData] = useState<TrialData[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [responseAngle, setResponseAngle] = useState<number | null>(null)
   const [responseStartTime, setResponseStartTime] = useState<number | null>(null)
@@ -311,7 +317,7 @@ function ExperimentPage() {
   const stimTimeoutRef = useRef<number | null>(null)
   const elapsedTimeIntervalRef = useRef<number | null>(null)
 
-  const shuffle = useCallback((arr: number[]) => {
+  const shuffle = useCallback(<T,>(arr: T[]): T[] => {
     const copy = [...arr]
     for (let i = copy.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1))
@@ -321,8 +327,8 @@ function ExperimentPage() {
   }, [])
 
   const startTrial = useCallback(
-    async (index: number, directions: number[]) => {
-      const direction = directions[index]
+    async (index: number, trials: TrialData[]) => {
+      const trial = trials[index]
 
       // 前のタスクのタイマーをクリア
       if (stimTimeoutRef.current !== null) {
@@ -357,8 +363,10 @@ function ExperimentPage() {
         const characteristic = getBleCharacteristic()
         if (characteristic) {
           const encoder = new TextEncoder()
+          // デューティー比を含むコマンドを送信（例: "0 70" や "90 100"）
+          const command = `${trial.direction} ${trial.dutyCycle}`
           // writeValue()は非同期で実行（完了を待たない）
-          characteristic.writeValue(encoder.encode(String(direction))).catch((error) => {
+          characteristic.writeValue(encoder.encode(command)).catch((error) => {
             console.error('BLE送信エラー:', error)
             // エラーが発生しても実験は続行
           })
@@ -376,15 +384,20 @@ function ExperimentPage() {
     if (status !== 'idle' && status !== 'finished') return
 
     // BLE接続は任意（接続がない場合は警告表示のみ）
-    // 1セット目と2セット目をそれぞれシャッフルしてから結合
-    // 各セット内では同じ方向は1度しか提示されない
-    const set1 = shuffle([...BASE_DIRECTIONS])
-    const set2 = shuffle([...BASE_DIRECTIONS])
-    const directions = [...set1, ...set2]
-    setTrialDirections(directions)
+    // 8方向×2デューティ比（70%、100%）の組み合わせを生成
+    const dutyCycles = [70, 100]
+    const trials: TrialData[] = []
+    for (const direction of BASE_DIRECTIONS) {
+      for (const dutyCycle of dutyCycles) {
+        trials.push({ direction, dutyCycle })
+      }
+    }
+    // 全試行の順序をランダム化
+    const shuffledTrials = shuffle(trials)
+    setTrialData(shuffledTrials)
     setResults([])
     setCurrentIndex(0)
-    await startTrial(0, directions)
+    await startTrial(0, shuffledTrials)
   }, [shuffle, startTrial, status, method])
 
   const handleResponseClick = useCallback(
@@ -412,12 +425,12 @@ function ExperimentPage() {
   )
 
   const handleSkip = useCallback(async () => {
-    if (status !== 'stimulating' || !trialDirections.length || isStimActive === null) {
+    if (status !== 'stimulating' || !trialData.length || isStimActive === null) {
       return
     }
 
     // スキップ時は回答角度を-1として記録
-    const trueDirection = trialDirections[currentIndex]
+    const trial = trialData[currentIndex]
     const startTime = responseStartTime ?? performance.now()
     const responseTimeMs = performance.now() - startTime
 
@@ -425,7 +438,8 @@ function ExperimentPage() {
       ...prev,
       {
         index: currentIndex,
-        trueDirection,
+        trueDirection: trial.direction,
+        dutyCycle: trial.dutyCycle,
         responseAngle: -1,
         responseTimeMs,
       },
@@ -433,15 +447,15 @@ function ExperimentPage() {
 
     // 次のタスクに進む
     const nextIndex = currentIndex + 1
-    if (nextIndex >= trialDirections.length) {
+    if (nextIndex >= trialData.length) {
       setStatus('finished')
     } else {
       setCurrentIndex(nextIndex)
-      await startTrial(nextIndex, trialDirections)
+      await startTrial(nextIndex, trialData)
     }
   }, [
     status,
-    trialDirections,
+    trialData,
     currentIndex,
     responseStartTime,
     isStimActive,
@@ -449,11 +463,11 @@ function ExperimentPage() {
   ])
 
   const handleNextTask = useCallback(async () => {
-    if (status !== 'stimulating' || responseAngle == null || !trialDirections.length) {
+    if (status !== 'stimulating' || responseAngle == null || !trialData.length) {
       return
     }
 
-    const trueDirection = trialDirections[currentIndex]
+    const trial = trialData[currentIndex]
     const startTime = responseStartTime ?? performance.now()
     const responseTimeMs = performance.now() - startTime
 
@@ -461,20 +475,21 @@ function ExperimentPage() {
       ...prev,
       {
         index: currentIndex,
-        trueDirection,
+        trueDirection: trial.direction,
+        dutyCycle: trial.dutyCycle,
         responseAngle,
         responseTimeMs,
       },
     ])
 
     const nextIndex = currentIndex + 1
-    if (nextIndex >= trialDirections.length) {
+    if (nextIndex >= trialData.length) {
       setStatus('finished')
     } else {
       setCurrentIndex(nextIndex)
-      await startTrial(nextIndex, trialDirections)
+      await startTrial(nextIndex, trialData)
     }
-  }, [currentIndex, responseAngle, responseStartTime, startTrial, status, trialDirections])
+  }, [currentIndex, responseAngle, responseStartTime, startTrial, status, trialData])
 
   const handleDownloadCsv = useCallback(() => {
     if (!results.length) return
@@ -494,6 +509,7 @@ function ExperimentPage() {
       'method',
       'trialIndex',
       'trueDirection',
+      'dutyCycle',
       'responseAngle',
       'responseTimeMs',
       'error',
@@ -507,6 +523,7 @@ function ExperimentPage() {
           method,
           r.index,
           r.trueDirection,
+          r.dutyCycle,
           '-1',
           Math.round(r.responseTimeMs),
           '', // 誤差は計算しない
@@ -523,6 +540,7 @@ function ExperimentPage() {
         method,
         r.index,
         r.trueDirection,
+        r.dutyCycle,
         r.responseAngle.toFixed(2),
         Math.round(r.responseTimeMs),
         error.toFixed(2),
@@ -695,8 +713,8 @@ function ExperimentPage() {
               {isPractice && (
                 <p className="response-hint">
                   正解方向:{' '}
-                  {trialDirections[currentIndex] != null
-                    ? `${trialDirections[currentIndex]}°`
+                  {trialData[currentIndex] != null
+                    ? `${trialData[currentIndex].direction}° (デューティー比: ${trialData[currentIndex].dutyCycle}%)`
                     : '未設定'}
                 </p>
               )}
