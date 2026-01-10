@@ -270,6 +270,27 @@ function Home() {
             )}
           </div>
         </section>
+
+        <section className="card">
+          <h2>アンケート</h2>
+          <div className="button-row">
+            <button
+              className="primary-button"
+              onClick={() => navigate('/pre-questionnaire')}
+            >
+              実験前アンケート
+            </button>
+            <button
+              className="primary-button"
+              onClick={() => navigate('/post-questionnaire')}
+            >
+              実験後アンケート
+            </button>
+          </div>
+          <p className="helper-text">
+            実験前・実験後アンケートを実施し、結果をCSVでダウンロードできます。
+          </p>
+        </section>
       </main>
 
       <footer className="app-footer">
@@ -583,7 +604,9 @@ function ExperimentPage() {
     })
 
     const csvContent = [header.join(','), ...lines].join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    // BOM付きUTF-8で保存
+    const bom = '\uFEFF'
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
 
     const link = document.createElement('a')
@@ -893,11 +916,317 @@ function ExperimentPage() {
   )
 }
 
+type PreQuestionnaireData = {
+  participantId: string
+  name: string
+  gender: 'male' | 'female' | 'no-answer' | ''
+  handedness: 'right' | 'left' | 'both' | 'unknown' | ''
+}
+
+function PreQuestionnairePage() {
+  const navigate = useNavigate()
+  const [formData, setFormData] = useState<PreQuestionnaireData>({
+    participantId: '',
+    name: '',
+    gender: '',
+    handedness: '',
+  })
+
+  const handleSubmit = useCallback(() => {
+    // 必須項目チェック
+    if (!formData.participantId || !formData.name || !formData.gender || !formData.handedness) {
+      alert('すべての項目を入力してください。')
+      return
+    }
+
+    // CSVダウンロード
+    const header = ['participantId', 'name', 'gender', 'handedness']
+    const row = [
+      formData.participantId,
+      formData.name,
+      formData.gender === 'male' ? '男' : formData.gender === 'female' ? '女' : '無回答',
+      formData.handedness === 'right' ? '右利き' : formData.handedness === 'left' ? '左利き' : formData.handedness === 'both' ? '両利き' : 'わからない',
+    ]
+    const csvContent = [header.join(','), row.join(',')].join('\n')
+    // BOM付きUTF-8で保存
+    const bom = '\uFEFF'
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    link.href = url
+    link.setAttribute(
+      'download',
+      `pre_questionnaire_${formData.participantId || 'unknown'}_${timestamp}.csv`,
+    )
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    alert('アンケート結果をダウンロードしました。')
+  }, [formData])
+
+  return (
+    <div className="app-root">
+      <main className="app-main single-column">
+        <section className="card">
+          <h2>実験前アンケート</h2>
+          <div className="field-group">
+            <label className="field-label" htmlFor="pre-participantId">
+              参加者番号 <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <input
+              id="pre-participantId"
+              className="text-input single-line"
+              type="text"
+              placeholder="例: P01"
+              value={formData.participantId}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, participantId: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor="pre-name">
+              名前 <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <input
+              id="pre-name"
+              className="text-input single-line"
+              type="text"
+              placeholder="例: 山田太郎"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor="pre-gender">
+              性別 <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <select
+              id="pre-gender"
+              className="select-input"
+              value={formData.gender}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  gender: e.target.value as 'male' | 'female' | 'no-answer' | '',
+                }))
+              }
+            >
+              <option value="">選択してください</option>
+              <option value="male">男</option>
+              <option value="female">女</option>
+              <option value="no-answer">無回答</option>
+            </select>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor="pre-handedness">
+              利き手 <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <select
+              id="pre-handedness"
+              className="select-input"
+              value={formData.handedness}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  handedness: e.target.value as 'right' | 'left' | 'both' | 'unknown' | '',
+                }))
+              }
+            >
+              <option value="">選択してください</option>
+              <option value="right">右利き</option>
+              <option value="left">左利き</option>
+              <option value="both">両利き</option>
+              <option value="unknown">わからない</option>
+            </select>
+          </div>
+
+          <div className="button-row end">
+            <button className="secondary-button" onClick={() => navigate('/')}>
+              ホーム画面へ
+            </button>
+            <button className="primary-button" onClick={handleSubmit}>
+              結果をCSVでダウンロード
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}
+
+type PostQuestionnaireData = {
+  participantId: string
+  preferredMethod: 'wrist-worn' | 'hand-grip' | 'both' | 'unknown' | ''
+  reason: string
+  comments: string
+}
+
+function PostQuestionnairePage() {
+  const navigate = useNavigate()
+  const [formData, setFormData] = useState<PostQuestionnaireData>({
+    participantId: '',
+    preferredMethod: '',
+    reason: '',
+    comments: '',
+  })
+
+  const handleSubmit = useCallback(() => {
+    // 必須項目チェック
+    if (!formData.participantId || !formData.preferredMethod) {
+      alert('参加者番号と好ましい手法を選択してください。')
+      return
+    }
+
+    // CSVダウンロード
+    const header = ['participantId', 'preferredMethod', 'reason', 'comments']
+    const methodLabel =
+      formData.preferredMethod === 'wrist-worn'
+        ? 'wrist-worn'
+        : formData.preferredMethod === 'hand-grip'
+          ? 'hand-grip'
+          : formData.preferredMethod === 'both'
+            ? 'どちらも同じ'
+            : 'わからない'
+    const row = [
+      formData.participantId,
+      methodLabel,
+      `"${formData.reason.replace(/"/g, '""')}"`, // CSVのエスケープ処理
+      `"${formData.comments.replace(/"/g, '""')}"`, // CSVのエスケープ処理
+    ]
+    const csvContent = [header.join(','), row.join(',')].join('\n')
+    // BOM付きUTF-8で保存
+    const bom = '\uFEFF'
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    link.href = url
+    link.setAttribute(
+      'download',
+      `post_questionnaire_${formData.participantId || 'unknown'}_${timestamp}.csv`,
+    )
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+
+    alert('アンケート結果をダウンロードしました。')
+  }, [formData])
+
+  return (
+    <div className="app-root">
+      <main className="app-main single-column">
+        <section className="card">
+          <h2>実験後アンケート</h2>
+          <div className="field-group">
+            <label className="field-label" htmlFor="post-participantId">
+              参加者番号 <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <input
+              id="post-participantId"
+              className="text-input single-line"
+              type="text"
+              placeholder="例: P01"
+              value={formData.participantId}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, participantId: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor="post-preferredMethod">
+              どちらの手法がより好ましいと感じたか{' '}
+              <span style={{ color: 'var(--danger)' }}>*</span>
+            </label>
+            <select
+              id="post-preferredMethod"
+              className="select-input"
+              value={formData.preferredMethod}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  preferredMethod: e.target.value as
+                    | 'wrist-worn'
+                    | 'hand-grip'
+                    | 'both'
+                    | 'unknown'
+                    | '',
+                }))
+              }
+            >
+              <option value="">選択してください</option>
+              <option value="wrist-worn">Wrist-worn</option>
+              <option value="hand-grip">Hand-grip</option>
+              <option value="both">どちらも同じ</option>
+              <option value="unknown">わからない</option>
+            </select>
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor="post-reason">
+              その理由
+            </label>
+            <textarea
+              id="post-reason"
+              className="text-input"
+              rows={4}
+              placeholder="好ましいと感じた理由を記入してください"
+              value={formData.reason}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, reason: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="field-group">
+            <label className="field-label" htmlFor="post-comments">
+              その他実験や手法に対する意見
+            </label>
+            <textarea
+              id="post-comments"
+              className="text-input"
+              rows={4}
+              placeholder="実験や手法に対する意見・感想を記入してください"
+              value={formData.comments}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, comments: e.target.value }))
+              }
+            />
+          </div>
+
+          <div className="button-row end">
+            <button className="secondary-button" onClick={() => navigate('/')}>
+              ホーム画面へ
+            </button>
+            <button className="primary-button" onClick={handleSubmit}>
+              結果をCSVでダウンロード
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+  )
+}
+
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/experiment" element={<ExperimentPage />} />
+      <Route path="/pre-questionnaire" element={<PreQuestionnairePage />} />
+      <Route path="/post-questionnaire" element={<PostQuestionnairePage />} />
     </Routes>
   )
 }
