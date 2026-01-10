@@ -712,6 +712,12 @@ function ExperimentPage() {
               <div className="button-row end">
                 <button
                   className="secondary-button"
+                  onClick={() => navigate('/')}
+                >
+                  ホーム画面へ
+                </button>
+                <button
+                  className="secondary-button"
                   onClick={handleSkip}
                   disabled={responseAngle === -1 || isStimActive === null}
                 >
