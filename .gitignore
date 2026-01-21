@@ -54,3 +54,7 @@ Thumbs.db
 # IDE specific
 *.code-workspace
 
+# R local library / analysis outputs
+.r_libs/
+実験/分析/outputs/
+

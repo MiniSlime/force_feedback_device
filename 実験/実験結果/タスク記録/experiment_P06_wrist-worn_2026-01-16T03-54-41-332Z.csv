@@ -1,0 +1,17 @@
+﻿participantId,method,trialIndex,trueDirection,dutyCycle,responseAngle,responseTimeMs,error,isCorrect,clarity,confidence
+P06,wrist-worn,0,180,100,182.90,4238,2.90,1,5,5
+P06,wrist-worn,1,270,70,311.13,6681,41.13,0,5,5
+P06,wrist-worn,2,45,70,351.00,7335,54.00,0,6,6
+P06,wrist-worn,3,90,100,-1,10752,,-1,1,1
+P06,wrist-worn,4,90,70,-1,6058,,-1,1,1
+P06,wrist-worn,5,0,70,357.52,4983,2.48,1,6,6
+P06,wrist-worn,6,0,100,1.83,4044,1.83,1,6,6
+P06,wrist-worn,7,225,100,204.09,4520,20.91,1,6,6
+P06,wrist-worn,8,270,100,320.36,5386,50.36,0,5,3
+P06,wrist-worn,9,225,70,286.01,3809,61.01,0,5,4
+P06,wrist-worn,10,135,70,232.25,8298,97.25,0,5,4
+P06,wrist-worn,11,180,70,260.57,5910,80.57,0,4,4
+P06,wrist-worn,12,315,70,333.54,5296,18.54,1,5,5
+P06,wrist-worn,13,135,100,210.43,6666,75.43,0,5,5
+P06,wrist-worn,14,45,100,345.36,3845,59.64,0,5,5
+P06,wrist-worn,15,315,100,347.74,5913,32.74,0,5,5
