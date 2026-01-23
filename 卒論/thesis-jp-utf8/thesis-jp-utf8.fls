@@ -1,0 +1,121 @@
+PWD /home/minislime/force_feedback_device/ÂçíË´ñ/thesis-jp-utf8
+INPUT /etc/texmf/web2c/texmf.cnf
+INPUT /usr/share/texmf/web2c/texmf.cnf
+INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf
+INPUT /etc/texmf/web2c/texmf.cnf
+INPUT /usr/share/texmf/web2c/texmf.cnf
+INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf
+INPUT /var/lib/texmf/web2c/eptex/platex.fmt
+INPUT /home/minislime/force_feedback_device/¬¥œ¿/thesis-jp-utf8/thesis-jp-utf8.tex
+OUTPUT thesis-jp-utf8.log
+INPUT /usr/share/texlive/texmf-dist/tex/platex/base/jreport.cls
+INPUT /usr/share/texlive/texmf-dist/tex/platex/base/jreport.cls
+INPUT /usr/share/texlive/texmf-dist/tex/platex/base/jsize11.clo
+INPUT /usr/share/texlive/texmf-dist/tex/platex/base/jsize11.clo
+INPUT /usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/tmin10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/min10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmr10.tfm
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics-def/dvipdfmx.def
+INPUT /usr/share/texlive/texmf-dist/tex/latex/graphics-def/dvipdfmx.def
+INPUT /usr/share/texlive/texmf-dist/tex/latex/placeins/placeins.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/placeins/placeins.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/times.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/times.sty
+INPUT mast-jp-utf8.sty
+INPUT mast-jp-utf8.sty
+INPUT /usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-dvips.def
+INPUT /usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-dvips.def
+INPUT thesis-jp-utf8.aux
+INPUT thesis-jp-utf8.aux
+OUTPUT thesis-jp-utf8.aux
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/omlptm.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/t1ptm.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1ptm.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/omsptm.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1ptm.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1ptm.fd
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmr7t.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/tmin10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/min10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmr7t.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/tmin10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/min10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmr7t.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/tmin10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/min10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmr7t.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmr6.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmmi10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmmi8.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmmi6.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/min8.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/min6.tfm
+OUTPUT thesis-jp-utf8.dvi
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/tgoth10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/goth10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/tgoth10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/goth10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm
+INPUT thesis-jp-utf8.toc
+INPUT thesis-jp-utf8.toc
+OUTPUT thesis-jp-utf8.toc
+INPUT thesis-jp-utf8.lof
+INPUT thesis-jp-utf8.lof
+OUTPUT thesis-jp-utf8.lof
+INPUT thesis-jp-utf8.lot
+INPUT thesis-jp-utf8.lot
+OUTPUT thesis-jp-utf8.lot
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/tgoth10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/ptex-fonts/standard/goth10.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmr8c.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmr7t.tfm
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm
+INPUT figure/hardwere-kousei.png
+INPUT extractbb -B cropbox -O figure/hardwere-kousei.png
+INPUT figure/motor_direction.png
+INPUT extractbb -B cropbox -O figure/motor_direction.png
+INPUT figure/sisakuhin.png
+INPUT extractbb -B cropbox -O figure/sisakuhin.png
+INPUT figure/wrist-worn.jpg
+INPUT extractbb -B cropbox -O figure/wrist-worn.jpg
+INPUT figure/hand-grip.jpg
+INPUT extractbb -B cropbox -O figure/hand-grip.jpg
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm
+INPUT figure/answer-panel.png
+INPUT extractbb -B cropbox -O figure/answer-panel.png
+INPUT figure/questionnaire-panel.png
+INPUT extractbb -B cropbox -O figure/questionnaire-panel.png
+INPUT figure/experiment-environment1.jpg
+INPUT extractbb -B cropbox -O figure/experiment-environment1.jpg
+INPUT figure/experiment-environment2.jpg
+INPUT extractbb -B cropbox -O figure/experiment-environment2.jpg
+INPUT thesis-jp-utf8.bbl
+INPUT thesis-jp-utf8.bbl
+INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmri7t.tfm
+INPUT figure/questionnaire1.png
+INPUT extractbb -B cropbox -O figure/questionnaire1.png
+INPUT figure/questionnaire2.png
+INPUT extractbb -B cropbox -O figure/questionnaire2.png
+INPUT thesis-jp-utf8.aux

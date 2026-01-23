@@ -1,0 +1,58 @@
+\begin{thebibliography}{1}
+
+\bibitem{stock2020feedi}
+Simon Stock, Alain Bertemes, Marco Stang, Martin B{\"o}hme, Daniel Grimm, and
+  Wilhelm Stork.
+\newblock Feedi - a smart wearable foot-band for navigation and guidance using
+  haptic feedback.
+\newblock In {\em Advances in Intelligent Systems and Computing}, volume 1152,
+  pages 349--355. Springer Nature Switzerland AG, 2020.
+
+\bibitem{ntt_burunavi4}
+錯覚で実現する力覚情報の伝達｜ntt r\&d website.
+\newblock NTT R\&D Website.
+\newblock 参照日: 2026-01-23.
+
+\bibitem{cai2024rdog}
+Shaojun Cai, Ashwin Ram, Zhengtai Gou, Mohd Alqama~Wasim Shaikh, Yu-An Chen,
+  Yingjia Wan, Kotaro Hara, Shengdong Zhao, and David Hsu.
+\newblock Navigating real-world challenges: A quadruped robot guiding system
+  for visually impaired people in diverse environments.
+\newblock In {\em Proceedings of the CHI Conference on Human Factors in
+  Computing Systems (CHI '24)}, Honolulu, HI, USA, May 2024. ACM.
+
+\bibitem{ma2024airpush}
+Yuxin Ma, Tianze Xie, Peng Zhang, Hwan Kim, and Seungwoo Je.
+\newblock Airpush: A pneumatic wearable haptic device providing
+  multi-dimensional force feedback on a fingertip.
+\newblock In {\em Proceedings of the CHI Conference on Human Factors in
+  Computing Systems (CHI '24)}, Honolulu, HI, USA, May 2024. ACM.
+
+\bibitem{takada2019propeller}
+高田 崚介, 礒本 俊弥, 山田 渉, 真鍋 宏幸, and 志築 文太郎.
+\newblock プロペラを用いた頭部装着型歩行牽引デバイス.
+\newblock In {\em 情報処理学会 インタラクション 2019}, pages
+  236--237. 情報処理学会, March 2019.
+\newblock 1B-15.
+
+\bibitem{heo2018thorshammer}
+Seongkook Heo, Christina Chung, Geehyuk Lee, and Daniel Wigdor.
+\newblock Thor's hammer: An ungrounded force feedback device utilizing
+  propeller-induced propulsive force.
+\newblock In {\em Proceedings of the CHI Conference on Human Factors in
+  Computing Systems (CHI '18)}, Montreal, QC, Canada, April 2018. ACM.
+
+\bibitem{autodesk_fusion360}
+Autodesk fusion 360 | 3d cad/cam/caeソフトウェア.
+\newblock Autodesk公式サイト.
+\newblock 参照日: 2026-01-23.
+
+\bibitem{nasa-tlx}
+Sandra~G. Hart and Lowell~E. Staveland.
+\newblock Development of nasa-tlx (task load index): Results of empirical and
+  theoretical research.
+\newblock In Peter~A. Hancock and Najmedin Meshkati, editors, {\em Human Mental
+  Workload}, volume~52 of {\em Advances in Psychology}, pages 139--183.
+  North-Holland, 1988.
+
+\end{thebibliography}
