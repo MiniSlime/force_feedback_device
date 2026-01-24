@@ -92,9 +92,9 @@ p <- ggplot(summary_dt, aes(x = preferredLabel, y = count, fill = preferredLabel
   geom_text(aes(label = paste0(count, " (", ratio, "%)")), vjust = -0.4, size = 3.5) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
   labs(
-    x = "選択手法",
+    x = "選択条件",
     y = "人数",
-    title = "手法に対する好み"
+    title = "条件に対する好み"
   ) +
   theme_minimal(base_size = 12) +
   theme(
