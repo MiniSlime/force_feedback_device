@@ -111,6 +111,36 @@ INPUT figure/experiment-environment1.jpg
 INPUT extractbb -B cropbox -O figure/experiment-environment1.jpg
 INPUT figure/experiment-environment2.jpg
 INPUT extractbb -B cropbox -O figure/experiment-environment2.jpg
+INPUT figure/nasa_tlx_boxplot.png
+INPUT extractbb -B cropbox -O figure/nasa_tlx_boxplot.png
+INPUT figure/task_error_radar_wrist-worn_70.png
+INPUT extractbb -B cropbox -O figure/task_error_radar_wrist-worn_70.png
+INPUT figure/task_error_radar_wrist-worn_100.png
+INPUT extractbb -B cropbox -O figure/task_error_radar_wrist-worn_100.png
+INPUT figure/task_error_radar_hand-grip_70.png
+INPUT extractbb -B cropbox -O figure/task_error_radar_hand-grip_70.png
+INPUT figure/task_error_radar_hand-grip_100.png
+INPUT extractbb -B cropbox -O figure/task_error_radar_hand-grip_100.png
+INPUT figure/task_accuracy_radar_wrist-worn_70.png
+INPUT extractbb -B cropbox -O figure/task_accuracy_radar_wrist-worn_70.png
+INPUT figure/task_accuracy_radar_wrist-worn_100.png
+INPUT extractbb -B cropbox -O figure/task_accuracy_radar_wrist-worn_100.png
+INPUT figure/task_accuracy_radar_hand-grip_70.png
+INPUT extractbb -B cropbox -O figure/task_accuracy_radar_hand-grip_70.png
+INPUT figure/task_accuracy_radar_hand-grip_100.png
+INPUT extractbb -B cropbox -O figure/task_accuracy_radar_hand-grip_100.png
+INPUT figure/task_confusion_matrix_wrist-worn_70.png
+INPUT extractbb -B cropbox -O figure/task_confusion_matrix_wrist-worn_70.png
+INPUT figure/task_confusion_matrix_wrist-worn_100.png
+INPUT extractbb -B cropbox -O figure/task_confusion_matrix_wrist-worn_100.png
+INPUT figure/task_confusion_matrix_hand-grip_70.png
+INPUT extractbb -B cropbox -O figure/task_confusion_matrix_hand-grip_70.png
+INPUT figure/task_confusion_matrix_hand-grip_100.png
+INPUT extractbb -B cropbox -O figure/task_confusion_matrix_hand-grip_100.png
+INPUT figure/task_likert_boxplot.png
+INPUT extractbb -B cropbox -O figure/task_likert_boxplot.png
+INPUT figure/post_questionnaire_preference_plot.png
+INPUT extractbb -B cropbox -O figure/post_questionnaire_preference_plot.png
 INPUT thesis-jp-utf8.bbl
 INPUT thesis-jp-utf8.bbl
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmri7t.tfm

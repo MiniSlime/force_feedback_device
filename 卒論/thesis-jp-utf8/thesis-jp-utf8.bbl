@@ -1,4 +1,4 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 
 \bibitem{stock2020feedi}
 Simon Stock, Alain Bertemes, Marco Stang, Martin B{\"o}hme, Daniel Grimm, and
@@ -41,6 +41,21 @@ Seongkook Heo, Christina Chung, Geehyuk Lee, and Daniel Wigdor.
   propeller-induced propulsive force.
 \newblock In {\em Proceedings of the CHI Conference on Human Factors in
   Computing Systems (CHI '18)}, Montreal, QC, Canada, April 2018. ACM.
+
+\bibitem{esp_wroom_32_datasheet}
+Esp-wroom-32 datasheet.
+\newblock Espressif Systems.
+\newblock 参照日: 2026-01-23.
+
+\bibitem{mtr_09_017_datasheet}
+Mtr-09-017 datasheet.
+\newblock Robot Coders.
+\newblock 参照日: 2026-01-23.
+
+\bibitem{bluetooth_tech_overview}
+Bluetooth technology overview.
+\newblock Bluetooth SIG.
+\newblock 参照日: 2026-01-23.
 
 \bibitem{autodesk_fusion360}
 Autodesk fusion 360 | 3d cad/cam/caeソフトウェア.

@@ -83,18 +83,21 @@ participant_overall <- raw_dt[, .(
 
 agg <- participant_dir[, .(
   correctRate = mean(participantRate, na.rm = TRUE),
+  sdRate = sd(participantRate, na.rm = TRUE),
   n = sum(!is.na(participantRate))
 ), by = .(method, dutyCycle, trueDirection)]
 
 agg <- merge(combos, agg, by = c("method", "dutyCycle", "trueDirection"), all.x = TRUE)
 agg[is.na(correctRate), correctRate := 0]
+agg[is.na(sdRate), sdRate := 0]
 agg[is.na(n), n := 0]
 
-make_radar_plot <- function(dt, method_name, duty_cycle, output_path, overall_mean) {
+make_radar_plot <- function(dt, method_name, duty_cycle, output_path, overall_mean, overall_sd) {
   direction_order <- c(90, 135, 180, 225, 270, 315, 0, 45)
   direction_labels <- paste0(direction_order, "°")
   dt <- dt[order(match(trueDirection, direction_order))]
   values <- as.numeric(dt$correctRate)
+  sd_values <- as.numeric(dt$sdRate)
   names(values) <- direction_labels
   avg_rate <- mean(values, na.rm = TRUE)
 
@@ -129,18 +132,17 @@ make_radar_plot <- function(dt, method_name, duty_cycle, output_path, overall_me
   text(
     label_radius * cos(angle),
     label_radius * sin(angle),
-    labels = sprintf("%.1f%%", values * 100),
+    labels = sprintf("%.1f%%\n(%.1f%%)", values * 100, sd_values * 100),
     cex = 1.1,
     col = "grey20"
   )
   text(
     0,
     0,
-    sprintf("平均\n%.1f%%", overall_mean * 100),
+    sprintf("全体\n%.1f%%\n(%.1f%%)", overall_mean * 100, overall_sd * 100),
     cex = 1.3,
     col = "grey20"
   )
-  title(paste0("正答率(", method_name, " / ", duty_cycle, "%)"), cex.main = 1.3)
   dev.off()
 }
 
@@ -150,11 +152,16 @@ for (method_name in unique(combos$method)) {
     sub_dt <- agg[method == method_name & dutyCycle == duty_cycle]
     overall_mean <- participant_overall[method == method_name & dutyCycle == duty_cycle,
                                         mean(participantRate, na.rm = TRUE)]
+    overall_sd <- participant_overall[method == method_name & dutyCycle == duty_cycle,
+                                      sd(participantRate, na.rm = TRUE)]
     if (is.na(overall_mean)) {
       overall_mean <- 0
     }
+    if (is.na(overall_sd)) {
+      overall_sd <- 0
+    }
     output_path <- file.path(output_dir, sprintf("task_accuracy_radar_%s_%s.png", method_name, duty_cycle))
-    make_radar_plot(sub_dt, method_name, duty_cycle, output_path, overall_mean)
+    make_radar_plot(sub_dt, method_name, duty_cycle, output_path, overall_mean, overall_sd)
     output_files <- c(output_files, output_path)
   }
 }

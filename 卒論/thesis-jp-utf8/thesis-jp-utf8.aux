@@ -10,19 +10,22 @@
 \@writefile{toc}{\contentsline {section}{\numberline {1.2}目的とアプローチ}{1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {1.3}貢献}{2}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {1.4}本論文の構成}{2}\protected@file@percent }
-\citation{cai2024rdog}
-\citation{takada2019propeller}
 \citation{stock2020feedi}
 \citation{ntt_burunavi4}
 \citation{ma2024airpush}
+\citation{cai2024rdog}
+\citation{takada2019propeller}
 \@writefile{toc}{\contentsline {chapter}{\numberline {第2章}関連研究}{3}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {section}{\numberline {2.1}大型装置によるナビゲーションに関する研究}{3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2.2}ウェアラブルデバイスを用いた方向提示手法に関する研究}{3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.1}ウェアラブルデバイスを用いた方向提示手法に関する研究}{3}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}大型装置によるナビゲーションに関する研究}{3}\protected@file@percent }
 \citation{ma2024airpush}
 \citation{heo2018thorshammer}
-\@writefile{toc}{\contentsline {section}{\numberline {2.3}力覚提示を行うデバイスに関する研究}{4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}継続的な力覚提示を行うデバイスに関する研究}{4}\protected@file@percent }
+\citation{esp_wroom_32_datasheet}
+\citation{mtr_09_017_datasheet}
+\citation{bluetooth_tech_overview}
 \@writefile{toc}{\contentsline {chapter}{\numberline {第3章}提案システム}{5}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
@@ -34,8 +37,8 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces デバイスを上から見た際の各モータ配置と正転時の力覚提示方向}}{6}\protected@file@percent }
 \newlabel{fig:motor-direction}{{3.2}{6}}
 \citation{autodesk_fusion360}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces 筐体の試作品の一例}}{7}\protected@file@percent }
-\newlabel{fig:sample-body}{{3.3}{7}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.3}{\ignorespaces 筐体の試作品の一例}}{8}\protected@file@percent }
+\newlabel{fig:sample-body}{{3.3}{8}}
 \@writefile{lof}{\contentsline {figure}{\numberline {3.4}{\ignorespaces 手首に装着するタイプの筐体}}{9}\protected@file@percent }
 \newlabel{fig:wrist-worn-body}{{3.4}{9}}
 \@writefile{lof}{\contentsline {figure}{\numberline {3.5}{\ignorespaces 手で握るタイプの筐体}}{10}\protected@file@percent }
@@ -51,9 +54,9 @@
 \newlabel{sec:experiment-task}{{4.2}{12}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Webアプリの回答用画面}}{13}\protected@file@percent }
 \newlabel{fig:answer-panel}{{4.1}{13}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces 7点リッカート尺度の小質問の内容}}{13}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces 7段階リッカート尺度のアンケートの内容}}{13}\protected@file@percent }
 \newlabel{tab:questionnaire-items}{{4.1}{13}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces 7点リッカート尺度の小質問回答画面}}{14}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces 7段階リッカート尺度のアンケート回答画面}}{14}\protected@file@percent }
 \newlabel{fig:questionnaire-panel}{{4.2}{14}}
 \citation{nasa-tlx}
 \@writefile{toc}{\contentsline {section}{\numberline {4.3}実験環境}{15}\protected@file@percent }
@@ -70,13 +73,39 @@
 \@writefile{toc}{\contentsline {chapter}{\numberline {第5章}実験結果および考察}{18}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\numberline {第6章}本研究の制約および今後の課題}{19}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}NASA-TLX}{18}\protected@file@percent }
+\newlabel{sec:nasa-tlx}{{5.1}{18}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.1}{\ignorespaces NASA-TLXの結果}}{19}\protected@file@percent }
+\newlabel{fig:nasa_tlx_boxplot}{{5.1}{19}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}客観的評価}{19}\protected@file@percent }
+\newlabel{sec:objective-evaluation}{{5.2}{19}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.2}{\ignorespaces 条件とデューティー比ごとの方向別平均誤差}}{21}\protected@file@percent }
+\newlabel{fig:task-error-radar}{{5.2}{21}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.3}{\ignorespaces 条件とデューティー比ごとの方向別正答率}}{22}\protected@file@percent }
+\newlabel{fig:task-accuracy-radar}{{5.3}{22}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5.4}{\ignorespaces 条件とデューティー比ごとの混同行列}}{23}\protected@file@percent }
+\newlabel{fig:task-confusion-matrix}{{5.4}{23}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}主観的評価}{24}\protected@file@percent }
+\newlabel{sec:subjective-evaluation}{{5.3}{24}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.1}力覚の分かりやすさおよび回答への確信度}{24}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.5}{\ignorespaces 力覚の分かりやすさと回答への確信度の評価結果}}{24}\protected@file@percent }
+\newlabel{fig:task-likert-boxplot}{{5.5}{24}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3.2}条件の好み}{24}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5.6}{\ignorespaces 条件の好みのアンケート結果}}{25}\protected@file@percent }
+\newlabel{fig:post-questionnaire-preference-plot}{{5.6}{25}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}考察}{25}\protected@file@percent }
+\newlabel{sec:discussion}{{5.4}{25}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.1}小型力覚デバイスによる方向提示の知覚特性}{25}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4.2}保持方法が知覚特性に与える影響}{26}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {第6章}本研究の制約および今後の課題}{28}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\numberline {第7章}おわりに}{20}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}システムによる制約}{28}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}実験設計による制約}{28}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {第7章}おわりに}{30}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\@writefile{toc}{\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }謝辞}{21}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }謝辞}{31}\protected@file@percent }
 \bibstyle{unsrt}
 \bibdata{references}
 \bibcite{stock2020feedi}{1}
@@ -85,14 +114,17 @@
 \bibcite{ma2024airpush}{4}
 \bibcite{takada2019propeller}{5}
 \bibcite{heo2018thorshammer}{6}
-\bibcite{autodesk_fusion360}{7}
-\bibcite{nasa-tlx}{8}
-\@writefile{toc}{\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }参考文献}{22}\protected@file@percent }
-\@writefile{toc}{\contentsline {chapter}{\numberline {付 録A }実験にて使用したアンケート}{23}\protected@file@percent }
+\bibcite{esp_wroom_32_datasheet}{7}
+\bibcite{mtr_09_017_datasheet}{8}
+\bibcite{bluetooth_tech_overview}{9}
+\bibcite{autodesk_fusion360}{10}
+\bibcite{nasa-tlx}{11}
+\@writefile{toc}{\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }参考文献}{32}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {付 録A }実験にて使用したアンケート}{34}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{appendix:questionnaire}{{A}{23}}
-\@writefile{toc}{\contentsline {section}{\numberline {A.1}実験前アンケート}{24}\protected@file@percent }
-\newlabel{fig:pre-questionnaire}{{A.1}{24}}
-\@writefile{toc}{\contentsline {section}{\numberline {A.2}実験後アンケート}{25}\protected@file@percent }
-\newlabel{fig:post-questionnaire}{{A.2}{25}}
+\newlabel{appendix:questionnaire}{{A}{34}}
+\@writefile{toc}{\contentsline {section}{\numberline {A.1}実験前アンケート}{35}\protected@file@percent }
+\newlabel{fig:pre-questionnaire}{{A.1}{35}}
+\@writefile{toc}{\contentsline {section}{\numberline {A.2}実験後アンケート}{36}\protected@file@percent }
+\newlabel{fig:post-questionnaire}{{A.2}{36}}

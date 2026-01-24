@@ -120,7 +120,6 @@ make_confusion_plot <- function(mat, method_name, duty_cycle, output_path) {
       text(j, nrow(mat) - i + 1, labels = value, cex = 0.9, col = "black")
     }
   }
-  title(paste0("混同行列(", method_name, " / ", duty_cycle, "%)"))
   dev.off()
 }
 
