@@ -100,26 +100,33 @@ item_labels <- c(clarity = "力覚の分かりやすさ", confidence = "回答�
 long_dt[, item := factor(item, levels = names(item_labels), labels = item_labels)]
 
 dodge <- position_dodge(width = 0.7)
-p <- ggplot(long_dt, aes(x = condition, y = value, fill = condition)) +
-  stat_boxplot(geom = "errorbar", width = 0.2, position = dodge) +
-  geom_boxplot(outlier.size = 1.2, width = 0.6, position = dodge) +
-  facet_wrap(~ item, nrow = 1) +
-  scale_y_continuous(
-    limits = c(1, 7),
-    breaks = 1:7
-  ) +
-  labs(
-    x = "条件（手法 × デューティ比）",
-    y = "評定点",
-    fill = "条件"
-  ) +
-  theme_minimal(base_size = 12) +
-  theme(
-    axis.text.x = element_text(angle = 25, vjust = 1, hjust = 1),
-    legend.position = "none"
-  )
+output_paths <- character(0)
+for (item_name in levels(long_dt$item)) {
+  item_dt <- long_dt[item == item_name]
+  if (nrow(item_dt) == 0) {
+    next
+  }
+  p <- ggplot(item_dt, aes(x = condition, y = value, fill = condition)) +
+    stat_boxplot(geom = "errorbar", width = 0.2, position = dodge) +
+    geom_boxplot(outlier.size = 1.2, width = 0.6, position = dodge) +
+    scale_y_continuous(
+      limits = c(1, 7),
+      breaks = 1:7
+    ) +
+    labs(
+      x = "条件（手法 × デューティ比）",
+      y = paste0("評定点"),
+      fill = "条件"
+    ) +
+    theme_minimal(base_size = 12) +
+    theme(
+      axis.text.x = element_text(angle = 25, vjust = 1, hjust = 1),
+      legend.position = "none"
+    )
+  file_key <- names(item_labels)[match(item_name, item_labels)]
+  output_path <- file.path(output_dir, sprintf("task_likert_boxplot_%s.png", file_key))
+  ggsave(output_path, plot = p, width = 6.0, height = 4.2, dpi = 150)
+  output_paths <- c(output_paths, output_path)
+}
 
-output_path <- file.path(output_dir, "task_likert_boxplot.png")
-ggsave(output_path, plot = p, width = 9.0, height = 4.2, dpi = 150)
-
-message("出力先: ", output_path)
+message("出力先: ", paste(output_paths, collapse = "\n"))

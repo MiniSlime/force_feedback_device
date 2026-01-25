@@ -8,12 +8,12 @@ if (dir.exists(lib_dir)) {
 if (!requireNamespace("data.table", quietly = TRUE)) {
   stop("data.table が見つかりません。先にパッケージを導入してください。")
 }
-if (!requireNamespace("fmsb", quietly = TRUE)) {
-  stop("fmsb が見つかりません。先にパッケージを導入してください。")
+if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  stop("ggplot2 が見つかりません。先にパッケージを導入してください。")
 }
 
 library(data.table)
-library(fmsb)
+library(ggplot2)
 
 get_script_path <- function() {
   source_path <- sys.frame(1)$ofile
@@ -66,107 +66,60 @@ read_task <- function(path) {
   dt[, isCorrect := as.numeric(isCorrect)]
   dt[, error := as.numeric(error)]
   dt[responseAngle < 0 | isCorrect < 0, error := NA_real_]
+  dt[, signedError := NA_real_]
+  dt[
+    !is.na(responseAngle) & !is.na(trueDirection) & responseAngle >= 0 & isCorrect >= 0,
+    signedError := ((responseAngle - trueDirection + 180) %% 360) - 180
+  ]
   dt
 }
 
 raw_dt <- rbindlist(lapply(files, read_task), fill = TRUE)
 raw_dt <- raw_dt[method %in% c("hand-grip", "wrist-worn")]
 
-directions <- c(0, 45, 90, 135, 180, 225, 270, 315)
-combos <- CJ(method = c("hand-grip", "wrist-worn"), dutyCycle = c(70, 100), trueDirection = directions)
-
 participant_dir <- raw_dt[, .(
-  participantError = mean(error, na.rm = TRUE)
+  participantError = mean(signedError, na.rm = TRUE)
 ), by = .(participantId, method, dutyCycle, trueDirection)]
 
-participant_overall <- raw_dt[, .(
-  participantError = mean(error, na.rm = TRUE)
-), by = .(participantId, method, dutyCycle)]
+participant_dir <- participant_dir[!is.na(participantError)]
+participant_dir[, method := factor(method, levels = c("hand-grip", "wrist-worn"))]
+participant_dir[, trueDirection := factor(trueDirection, levels = c(0, 45, 90, 135, 180, 225, 270, 315))]
 
-agg <- participant_dir[, .(
-  meanError = mean(participantError, na.rm = TRUE),
-  sdError = sd(participantError, na.rm = TRUE),
-  n = sum(!is.na(participantError))
-), by = .(method, dutyCycle, trueDirection)]
-
-agg <- merge(combos, agg, by = c("method", "dutyCycle", "trueDirection"), all.x = TRUE)
-agg[is.na(meanError), meanError := 0]
-agg[is.na(sdError), sdError := 0]
-agg[is.na(n), n := 0]
-
-max_axis <- 120
-
-make_radar_plot <- function(dt, method_name, duty_cycle, output_path, overall_mean, overall_sd, max_axis) {
-  direction_order <- c(90, 135, 180, 225, 270, 315, 0, 45)
-  direction_labels <- paste0(direction_order, "°")
-  dt <- dt[order(match(trueDirection, direction_order))]
-  values <- as.numeric(dt$meanError)
-  sd_values <- as.numeric(dt$sdError)
-  names(values) <- direction_labels
-
-  radar_df <- rbind(
-    rep(max_axis, length(values)),
-    rep(0, length(values)),
-    values
-  )
-  colnames(radar_df) <- direction_labels
-  radar_df <- as.data.frame(radar_df)
-
-  seg <- 4
-  axis_labels <- seq(0, max_axis, length.out = seg + 1)
-  png(output_path, width = 900, height = 900, res = 150)
-  par(mar = c(1.5, 1.5, 3, 1.5))
-  radarchart(
-    radar_df,
-    axistype = 1,
-    seg = seg,
-    caxislabels = sprintf("%.0f°", axis_labels),
-    pcol = "#F58518",
-    pfcol = adjustcolor("#F58518", alpha.f = 0.25),
-    plwd = 2,
-    cglcol = "grey70",
-    cglty = 1,
-    cglwd = 0.8,
-    axislabcol = "grey30",
-    vlcex = 1.25
-  )
-  angle <- seq(90, 450, length = length(values) + 1) * pi / 180
-  angle <- angle[1:length(values)]
-  scale <- 1 / (seg + 1) + (values / max_axis) * seg / (seg + 1)
-  label_radius <- pmin(scale + 0.05, 1.1)
-  text(
-    label_radius * cos(angle),
-    label_radius * sin(angle),
-    labels = sprintf("%.1f°\n(%.1f°)", values, sd_values),
-    cex = 1.1,
-    col = "grey20"
-  )
-  text(
-    0,
-    0,
-    sprintf("全体\n%.1f°\n(%.1f°)", overall_mean, overall_sd),
-    cex = 1.3,
-    col = "grey20"
-  )
-  dev.off()
+dodge <- position_dodge(width = 0.75)
+make_boxplot <- function(dt, method_name, duty_cycle, output_path) {
+  p <- ggplot(dt, aes(x = trueDirection, y = participantError, fill = method)) +
+    geom_hline(yintercept = 0, color = "grey50", linewidth = 0.6) +
+    stat_boxplot(geom = "errorbar", width = 0.2, position = dodge) +
+    geom_boxplot(outlier.size = 1.5, width = 0.6, position = dodge) +
+    scale_x_discrete(labels = function(x) paste0(x, "°")) +
+    labs(
+      x = "正解方向",
+      y = "平均誤差(°)",
+      fill = "条件"
+    ) +
+    scale_y_continuous(expand = expansion(mult = c(0.08, 0.12))) +
+    theme_minimal(base_size = 12) +
+    theme(
+      axis.text.x = element_text(angle = 25, vjust = 1, hjust = 1),
+      axis.title.x = element_text(margin = margin(t = 8)),
+      plot.margin = margin(8, 12, 12, 8),
+      legend.position = "none"
+    )
+  ggsave(output_path, plot = p, width = 6.2, height = 4.6, dpi = 150)
 }
 
 output_files <- character(0)
-for (method_name in unique(combos$method)) {
-  for (duty_cycle in unique(combos$dutyCycle)) {
-    sub_dt <- agg[method == method_name & dutyCycle == duty_cycle]
-    overall_mean <- participant_overall[method == method_name & dutyCycle == duty_cycle,
-                                        mean(participantError, na.rm = TRUE)]
-    overall_sd <- participant_overall[method == method_name & dutyCycle == duty_cycle,
-                                      sd(participantError, na.rm = TRUE)]
-    if (is.na(overall_mean)) {
-      overall_mean <- 0
+for (method_name in levels(participant_dir$method)) {
+  for (duty_cycle in sort(unique(participant_dir$dutyCycle))) {
+    sub_dt <- participant_dir[method == method_name & dutyCycle == duty_cycle]
+    if (nrow(sub_dt) == 0) {
+      next
     }
-    if (is.na(overall_sd)) {
-      overall_sd <- 0
-    }
-    output_path <- file.path(output_dir, sprintf("task_error_radar_%s_%s.png", method_name, duty_cycle))
-    make_radar_plot(sub_dt, method_name, duty_cycle, output_path, overall_mean, overall_sd, max_axis)
+    output_path <- file.path(
+      output_dir,
+      sprintf("task_error_boxplot_%s_%s.png", method_name, duty_cycle)
+    )
+    make_boxplot(sub_dt, method_name, duty_cycle, output_path)
     output_files <- c(output_files, output_path)
   }
 }

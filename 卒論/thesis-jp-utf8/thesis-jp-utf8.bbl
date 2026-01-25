@@ -70,4 +70,18 @@ Sandra~G. Hart and Lowell~E. Staveland.
   Workload}, volume~52 of {\em Advances in Psychology}, pages 139--183.
   North-Holland, 1988.
 
+\bibitem{drewing2005first}
+Knut Drewing, Michael Fritschi, Regine Zopf, Marc~O. Ernst, and Martin Buss.
+\newblock First evaluation of a novel tactile display exerting shear force via
+  lateral displacement.
+\newblock {\em ACM Trans. Appl. Percept.}, 2(2):118–131, April 2005.
+
+\bibitem{kim2018hapcube}
+Hwan Kim, HyeonBeom Yi, Hyein Lee, and Woohun Lee.
+\newblock Hapcube: A wearable tactile device to provide tangential and normal
+  pseudo-force feedback on a fingertip.
+\newblock In {\em Proceedings of the 2018 CHI Conference on Human Factors in
+  Computing Systems}, CHI '18, page 1–13, New York, NY, USA, 2018.
+  Association for Computing Machinery.
+
 \end{thebibliography}

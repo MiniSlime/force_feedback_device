@@ -20,23 +20,24 @@
 \contentsline {section}{\numberline {4.5}実験手順}{15}%
 \contentsline {section}{\numberline {4.6}評価指標}{16}%
 \contentsline {subsection}{\numberline {4.6.1}NASA-TLX}{16}%
-\contentsline {subsection}{\numberline {4.6.2}客観的評価}{16}%
-\contentsline {subsection}{\numberline {4.6.3}主観的評価}{16}%
+\contentsline {subsection}{\numberline {4.6.2}方向知覚特性の客観的評価}{16}%
+\contentsline {subsection}{\numberline {4.6.3}方向知覚特性の主観的評価}{16}%
 \contentsline {chapter}{\numberline {第5章}実験結果および考察}{18}%
 \contentsline {section}{\numberline {5.1}NASA-TLX}{18}%
-\contentsline {section}{\numberline {5.2}客観的評価}{19}%
-\contentsline {section}{\numberline {5.3}主観的評価}{24}%
-\contentsline {subsection}{\numberline {5.3.1}力覚の分かりやすさおよび回答への確信度}{24}%
-\contentsline {subsection}{\numberline {5.3.2}条件の好み}{24}%
-\contentsline {section}{\numberline {5.4}考察}{25}%
-\contentsline {subsection}{\numberline {5.4.1}小型力覚デバイスによる方向提示の知覚特性}{25}%
-\contentsline {subsection}{\numberline {5.4.2}保持方法が知覚特性に与える影響}{26}%
-\contentsline {chapter}{\numberline {第6章}本研究の制約および今後の課題}{28}%
-\contentsline {section}{\numberline {6.1}システムによる制約}{28}%
-\contentsline {section}{\numberline {6.2}実験設計による制約}{28}%
-\contentsline {chapter}{\numberline {第7章}おわりに}{30}%
-\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }謝辞}{31}%
-\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }参考文献}{32}%
-\contentsline {chapter}{\numberline {付 録A }実験にて使用したアンケート}{34}%
-\contentsline {section}{\numberline {A.1}実験前アンケート}{35}%
-\contentsline {section}{\numberline {A.2}実験後アンケート}{36}%
+\contentsline {section}{\numberline {5.2}方向知覚特性の客観的評価}{19}%
+\contentsline {section}{\numberline {5.3}方向知覚特性の主観的評価}{23}%
+\contentsline {subsection}{\numberline {5.3.1}力覚の分かりやすさおよび回答への確信度}{23}%
+\contentsline {subsection}{\numberline {5.3.2}条件の好み}{23}%
+\contentsline {section}{\numberline {5.4}考察}{24}%
+\contentsline {subsection}{\numberline {5.4.1}小型力覚デバイスによる方向提示の知覚特性}{24}%
+\contentsline {subsection}{\numberline {5.4.2}保持方法が知覚特性に与える影響}{25}%
+\contentsline {chapter}{\numberline {第6章}本研究の制約および今後の課題}{27}%
+\contentsline {section}{\numberline {6.1}システムによる制約}{27}%
+\contentsline {section}{\numberline {6.2}実験設計による制約}{27}%
+\contentsline {section}{\numberline {6.3}実用化に向けた制約}{28}%
+\contentsline {chapter}{\numberline {第7章}おわりに}{29}%
+\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }謝辞}{30}%
+\contentsline {chapter}{\hbox to\@lnumwidth {\hfil }参考文献}{31}%
+\contentsline {chapter}{\numberline {付 録A }実験にて使用したアンケート}{33}%
+\contentsline {section}{\numberline {A.1}実験前アンケート}{34}%
+\contentsline {section}{\numberline {A.2}実験後アンケート}{35}%
