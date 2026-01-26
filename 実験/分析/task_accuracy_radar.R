@@ -62,8 +62,10 @@ read_task <- function(path) {
   dt[, method := gsub("_", "-", method)]
   dt[, trueDirection := as.integer(trueDirection)]
   dt[, dutyCycle := as.integer(dutyCycle)]
-  dt[, isCorrect := as.numeric(isCorrect)]
-  dt[isCorrect < 0, isCorrect := 0]
+  dt[, responseAngle := as.numeric(responseAngle)]
+  dt[, error := as.numeric(error)]
+  dt[responseAngle < 0, error := NA_real_]
+  dt[, isCorrect_new := ifelse(is.na(error), NA_real_, error <= 22.5)]
   dt
 }
 
@@ -74,11 +76,11 @@ directions <- c(0, 45, 90, 135, 180, 225, 270, 315)
 combos <- CJ(method = c("hand-grip", "wrist-worn"), dutyCycle = c(70, 100), trueDirection = directions)
 
 participant_dir <- raw_dt[, .(
-  participantRate = mean(isCorrect == 1, na.rm = TRUE)
+  participantRate = mean(isCorrect_new, na.rm = TRUE)
 ), by = .(participantId, method, dutyCycle, trueDirection)]
 
 participant_overall <- raw_dt[, .(
-  participantRate = mean(isCorrect == 1, na.rm = TRUE)
+  participantRate = mean(isCorrect_new, na.rm = TRUE)
 ), by = .(participantId, method, dutyCycle)]
 
 agg <- participant_dir[, .(

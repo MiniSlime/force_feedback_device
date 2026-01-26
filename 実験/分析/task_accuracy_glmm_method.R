@@ -85,14 +85,16 @@ read_task <- function(path) {
   dt[, method := gsub("_", "-", method)]
   dt[, trueDirection := as.integer(trueDirection)]
   dt[, dutyCycle := as.integer(dutyCycle)]
-  dt[, isCorrect := as.numeric(isCorrect)]
-  dt[isCorrect < 0, isCorrect := 0]
+  dt[, responseAngle := as.numeric(responseAngle)]
+  dt[, error := as.numeric(error)]
+  dt[responseAngle < 0, error := NA_real_]
+  dt[, isCorrect_new := ifelse(is.na(error), NA_real_, error <= 22.5)]
   dt
 }
 
 raw_dt <- rbindlist(lapply(files, read_task), fill = TRUE)
 raw_dt <- raw_dt[method %in% c("hand-grip", "wrist-worn")]
-raw_dt <- raw_dt[!is.na(isCorrect)]
+raw_dt <- raw_dt[!is.na(isCorrect_new)]
 
 if (nrow(raw_dt) == 0) {
   stop("解析対象データが空です。")
@@ -105,21 +107,21 @@ raw_dt[, dutyCycle := factor(dutyCycle, levels = c(70, 100))]
 raw_dt[, participantId := factor(participantId)]
 
 full_model <- glmer(
-  isCorrect ~ method + direction + dutyCycle + (1 | participantId),
+  isCorrect_new ~ method + direction + dutyCycle + (1 | participantId),
   data = raw_dt,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa")
 )
 
 interaction_model <- glmer(
-  isCorrect ~ method * direction + method * dutyCycle + (1 | participantId),
+  isCorrect_new ~ method * direction + method * dutyCycle + (1 | participantId),
   data = raw_dt,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa")
 )
 
 no_method_model <- glmer(
-  isCorrect ~ direction + dutyCycle + (1 | participantId),
+  isCorrect_new ~ direction + dutyCycle + (1 | participantId),
   data = raw_dt,
   family = binomial,
   control = glmerControl(optimizer = "bobyqa")

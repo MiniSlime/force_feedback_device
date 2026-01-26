@@ -66,8 +66,9 @@ read_task <- function(path) {
   dt[, trueDirection := as.integer(trueDirection)]
   dt[, dutyCycle := as.integer(dutyCycle)]
   dt[, responseAngle := as.numeric(responseAngle)]
-  dt[, isCorrect := as.numeric(isCorrect)]
-  dt[responseAngle < 0 | isCorrect < 0, isCorrect := NA_real_]
+  dt[, error := as.numeric(error)]
+  dt[responseAngle < 0, error := NA_real_]
+  dt[, isCorrect_new := ifelse(is.na(error), NA_real_, error <= 22.5)]
   dt
 }
 
@@ -75,7 +76,7 @@ raw_dt <- rbindlist(lapply(files, read_task), fill = TRUE)
 raw_dt <- raw_dt[method %in% c("hand-grip", "wrist-worn")]
 
 participant_dir <- raw_dt[, .(
-  participantAccuracy = mean(isCorrect, na.rm = TRUE)
+  participantAccuracy = mean(isCorrect_new, na.rm = TRUE)
 ), by = .(participantId, method, dutyCycle, trueDirection)]
 
 participant_dir <- participant_dir[!is.na(participantAccuracy)]
@@ -83,8 +84,22 @@ participant_dir[, method := factor(method, levels = c("hand-grip", "wrist-worn")
 participant_dir[, trueDirection := factor(trueDirection, levels = c(0, 45, 90, 135, 180, 225, 270, 315))]
 
 make_barplot <- function(dt, output_path) {
-  p <- ggplot(dt, aes(x = trueDirection, y = participantAccuracy)) +
-    stat_summary(fun = mean, geom = "col", width = 0.7, fill = "#4C78A8") +
+  summary_dt <- dt[, .(
+    meanAccuracy = mean(participantAccuracy, na.rm = TRUE),
+    sdAccuracy = sd(participantAccuracy, na.rm = TRUE)
+  ), by = .(trueDirection)]
+  summary_dt[, ymin := pmax(0, meanAccuracy - sdAccuracy)]
+  summary_dt[, ymax := pmin(1, meanAccuracy + sdAccuracy)]
+
+  p <- ggplot(summary_dt, aes(x = trueDirection, y = meanAccuracy)) +
+    geom_col(width = 0.7, fill = "#4C78A8", alpha = 0.85) +
+    geom_errorbar(
+      aes(ymin = ymin, ymax = ymax),
+      width = 0.2,
+      color = "#1F2D3D",
+      linewidth = 0.7
+    ) +
+    geom_point(color = "#1F2D3D", size = 1.4) +
     scale_x_discrete(labels = function(x) paste0(x, "°")) +
     scale_y_continuous(
       limits = c(0, 1),

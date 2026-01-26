@@ -55,17 +55,16 @@ read_task <- function(path) {
   dt[, trueDirection := as.integer(trueDirection)]
   dt[, dutyCycle := as.integer(dutyCycle)]
   dt[, responseAngle := as.numeric(responseAngle)]
-  dt[, isCorrect := as.numeric(isCorrect)]
   dt[, error := as.numeric(error)]
-  dt[responseAngle < 0 | isCorrect < 0, error := NA_real_]
-  dt[isCorrect < 0, isCorrect := NA_real_]
+  dt[responseAngle < 0, error := NA_real_]
+  dt[, isCorrect_new := ifelse(is.na(error), NA_real_, error <= 22.5)]
   dt
 }
 
 raw_dt <- rbindlist(lapply(files, read_task), fill = TRUE)
 raw_dt <- raw_dt[method %in% c("hand-grip", "wrist-worn")]
 
-accuracy_values <- raw_dt[!is.na(isCorrect), as.numeric(isCorrect == 1)]
+accuracy_values <- raw_dt[!is.na(isCorrect_new), as.numeric(isCorrect_new)]
 error_values <- raw_dt[!is.na(error), error]
 
 overall_accuracy_mean <- mean(accuracy_values, na.rm = TRUE)
@@ -73,8 +72,8 @@ overall_accuracy_sd <- sd(accuracy_values, na.rm = TRUE)
 overall_error_mean <- mean(error_values, na.rm = TRUE)
 overall_error_sd <- sd(error_values, na.rm = TRUE)
 
-participant_accuracy <- raw_dt[!is.na(isCorrect), .(
-  accuracy = mean(isCorrect == 1, na.rm = TRUE)
+participant_accuracy <- raw_dt[!is.na(isCorrect_new), .(
+  accuracy = mean(isCorrect_new, na.rm = TRUE)
 ), by = .(participantId)]
 participant_error <- raw_dt[!is.na(error), .(
   meanError = mean(error, na.rm = TRUE)

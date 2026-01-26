@@ -100,6 +100,7 @@ item_labels <- c(clarity = "力覚の分かりやすさ", confidence = "回答�
 long_dt[, item := factor(item, levels = names(item_labels), labels = item_labels)]
 
 dodge <- position_dodge(width = 0.7)
+jitter <- position_jitterdodge(jitter.width = 0.12, dodge.width = 0.7)
 output_paths <- character(0)
 for (item_name in levels(long_dt$item)) {
   item_dt <- long_dt[item == item_name]
@@ -108,14 +109,22 @@ for (item_name in levels(long_dt$item)) {
   }
   p <- ggplot(item_dt, aes(x = condition, y = value, fill = condition)) +
     stat_boxplot(geom = "errorbar", width = 0.2, position = dodge) +
-    geom_boxplot(outlier.size = 1.2, width = 0.6, position = dodge) +
+    geom_boxplot(outlier.shape = NA, width = 0.6, position = dodge) +
+    geom_point(
+      aes(color = condition),
+      position = jitter,
+      color = "grey30",
+      alpha = 0.5,
+      size = 1.4,
+      show.legend = FALSE
+    ) +
     scale_y_continuous(
       limits = c(1, 7),
       breaks = 1:7
     ) +
     labs(
-      x = "条件（手法 × デューティ比）",
-      y = paste0("評定点"),
+      x = "条件 × デューティ比",
+      y = "評定点",
       fill = "条件"
     ) +
     theme_minimal(base_size = 12) +

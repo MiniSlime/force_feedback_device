@@ -111,9 +111,19 @@ sig_star <- data.table(
 )
 
 dodge <- position_dodge(width = 0.75)
+jitter <- position_jitterdodge(jitter.width = 0.12, dodge.width = 0.75)
+
 p <- ggplot(raw_dt, aes(x = item, y = value, fill = method)) +
   stat_boxplot(geom = "errorbar", width = 0.2, position = dodge) +
-  geom_boxplot(outlier.size = 1.5, width = 0.6, position = dodge) +
+  geom_boxplot(outlier.shape = NA, width = 0.6, position = dodge) +
+  geom_point(
+    aes(color = method),
+    position = jitter,
+    color = "grey30",
+    alpha = 0.5,
+    size = 1.5,
+    show.legend = FALSE
+  ) +
   scale_x_discrete(
     labels = function(x) {
       vapply(strwrap(x, width = 6), paste, collapse = "\n", FUN.VALUE = character(1))
