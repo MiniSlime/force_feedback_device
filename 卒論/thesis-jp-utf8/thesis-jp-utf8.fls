@@ -137,10 +137,10 @@ INPUT figure/task_confusion_matrix_hand-grip_70.png
 INPUT extractbb -B cropbox -O figure/task_confusion_matrix_hand-grip_70.png
 INPUT figure/task_confusion_matrix_hand-grip_100.png
 INPUT extractbb -B cropbox -O figure/task_confusion_matrix_hand-grip_100.png
-INPUT figure/task_likert_boxplot_clarity.png
-INPUT extractbb -B cropbox -O figure/task_likert_boxplot_clarity.png
-INPUT figure/task_likert_boxplot_confidence.png
-INPUT extractbb -B cropbox -O figure/task_likert_boxplot_confidence.png
+INPUT figure/task_likert_diverging_bar_clarity.png
+INPUT extractbb -B cropbox -O figure/task_likert_diverging_bar_clarity.png
+INPUT figure/task_likert_diverging_bar_confidence.png
+INPUT extractbb -B cropbox -O figure/task_likert_diverging_bar_confidence.png
 INPUT figure/post_questionnaire_preference_plot.png
 INPUT extractbb -B cropbox -O figure/post_questionnaire_preference_plot.png
 INPUT thesis-jp-utf8.bbl
